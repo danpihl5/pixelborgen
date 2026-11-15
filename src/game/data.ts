@@ -1,7 +1,7 @@
 // Balance numbers for towers and enemies. Distances are in tiles, times in seconds.
 
 export type TowerType = 'bue' | 'kanon' | 'frost';
-export type EnemyType = 'slime' | 'bat' | 'knight' | 'boss';
+export type EnemyType = 'peasant' | 'raven' | 'knight' | 'ogre';
 
 export interface TowerDef {
   name: string;
@@ -32,17 +32,17 @@ export interface EnemyDef {
 
 export const TOWERS: Record<TowerType, TowerDef> = {
   bue: { name: 'Bue', desc: 'Hurtige pile', cost: 50, range: 2.6, dmg: 7, rate: 0.55, speed: 10, splash: 0, slow: 0 },
-  kanon: { name: 'Kanon', desc: 'Rammer flere', cost: 90, range: 2.3, dmg: 16, rate: 1.4, speed: 6, splash: 1.0, slow: 0 },
-  frost: { name: 'Frost', desc: 'Bremser dem', cost: 70, range: 2.0, dmg: 3, rate: 0.9, speed: 8, splash: 0.7, slow: 0.5 },
+  kanon: { name: 'Katapult', desc: 'Rammer flere', cost: 90, range: 2.3, dmg: 16, rate: 1.4, speed: 6, splash: 1.0, slow: 0 },
+  frost: { name: 'Magiker', desc: 'Fryser dem', cost: 70, range: 2.0, dmg: 3, rate: 0.9, speed: 8, splash: 0.7, slow: 0.5 },
 };
 
 export const TOWER_TYPES = Object.keys(TOWERS) as TowerType[];
 
 export const ENEMIES: Record<EnemyType, EnemyDef> = {
-  slime: { name: 'Slim', hp: 22, speed: 1.0, reward: 4, dmg: 1, flying: false },
-  bat: { name: 'Flagermus', hp: 13, speed: 1.8, reward: 4, dmg: 1, flying: true },
+  peasant: { name: 'Bonde', hp: 22, speed: 1.0, reward: 4, dmg: 1, flying: false },
+  raven: { name: 'Ravn', hp: 13, speed: 1.8, reward: 4, dmg: 1, flying: true },
   knight: { name: 'Ridder', hp: 70, speed: 0.7, reward: 9, dmg: 2, flying: false },
-  boss: { name: 'Kæmpeslim', hp: 340, speed: 0.55, reward: 60, dmg: 10, flying: false },
+  ogre: { name: 'Troldekonge', hp: 340, speed: 0.55, reward: 60, dmg: 10, flying: false },
 };
 
 export const START_GOLD = 160;

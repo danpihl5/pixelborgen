@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'io.github.danpihl5.pixelborgen',
   appName: 'Pixelborgen',
   webDir: 'dist',
-  backgroundColor: '#1a1c2c',
+  backgroundColor: '#241a17',
 };
 
 export default config;

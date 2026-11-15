@@ -57,8 +57,8 @@ describe('building', () => {
 
 describe('waves', () => {
   it('adds a boss every fifth wave', () => {
-    expect(makeWave(4).spawns.some((s) => s.type === 'boss')).toBe(false);
-    expect(makeWave(5).spawns.at(-1)?.type).toBe('boss');
+    expect(makeWave(4).spawns.some((s) => s.type === 'ogre')).toBe(false);
+    expect(makeWave(5).spawns.at(-1)?.type).toBe('ogre');
   });
 
   it('a couple of towers hold the first wave', () => {

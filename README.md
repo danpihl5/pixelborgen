@@ -1,6 +1,8 @@
 # Pixelborgen
 
-Isometrisk tower-defence-spil i retro pixel-art til mobilen. Byg tårne langs vejen og forsvar borgen mod slim, flagermus, riddere og kæmpeslim.
+Isometrisk tower-defence-spil i pixel-art til mobilen. Den røde hær af bønder, ravne, riddere og en troldekonge vil storme borgen og tage prinsessen. Byg blå tårne langs vejen og stop dem.
+
+Grafikken er inspireret af *Diplomacy is Not an Option* (varme middelalderfarver, kantet low-poly-skygge, byzantinske bygninger) og *Fat Princess* (chibi-figurer med store hoveder, tykke konturer, rødt mod blåt).
 
 Lavet med [Phaser 3](https://phaser.io), TypeScript og Vite. [Capacitor](https://capacitorjs.com) gør det til en app til iPhone og Android.
 

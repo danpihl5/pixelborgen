@@ -19,7 +19,7 @@ async function start(): Promise<void> {
   const phaser = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    backgroundColor: '#1a1c2c',
+    backgroundColor: '#241a17',
     pixelArt: true,
     roundPixels: true,
     scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },

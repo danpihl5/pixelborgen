@@ -18,13 +18,13 @@ export function makeWave(wave: number): Wave {
   const count = Math.min(6 + wave * 2, 44);
   const spawns: WaveSpawn[] = [];
   for (let i = 0; i < count; i++) {
-    let type: EnemyType = 'slime';
-    if (wave >= 3 && i % 3 === 1) type = 'bat';
+    let type: EnemyType = 'peasant';
+    if (wave >= 3 && i % 3 === 1) type = 'raven';
     if (wave >= 5 && i % 4 === 3) type = 'knight';
     if (wave >= 8 && i % 5 === 0) type = 'knight';
-    spawns.push({ type, gap: type === 'bat' ? 0.45 : 0.85 });
+    spawns.push({ type, gap: type === 'raven' ? 0.45 : 0.85 });
   }
-  if (wave % 5 === 0) spawns.push({ type: 'boss', gap: 1.5 });
+  if (wave % 5 === 0) spawns.push({ type: 'ogre', gap: 1.5 });
   return {
     spawns,
     hpMul: (1 + 0.25 * (wave - 1)) * Math.pow(1.05, wave - 1),

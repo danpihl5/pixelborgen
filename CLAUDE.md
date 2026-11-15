@@ -14,6 +14,7 @@ Isometric pixel-art tower defence for phones. Phaser 3 + TypeScript + Vite, wrap
 - `src/game/` is the pure simulation: no Phaser, no DOM. Positions are in tile units on a square grid. It reports what happened through `Game.drainEvents()`. Keep it that way so it stays testable and the art can change freely.
 - `src/iso.ts` is the only place that knows the isometric projection (32×16 tiles).
 - `src/art/` draws every texture onto canvases at start-up. Each sprite has a foot point (`fx`, `fy`) that stands on the tile centre.
+- Art direction: inspired by *Diplomacy is Not an Option* (warm medieval palette, flat faceted low-poly shading, Byzantine/Roman buildings with terracotta roofs and domes) and *Fat Princess* (chibi characters with big square heads, thick dark outlines via `outline()`, red army vs. blue towers, cartoon plants). Keep it family-friendly: dust poofs and coins, no blood.
 - `src/scenes/WorldScene.ts` renders the state, plays effects and sounds from events, and handles tap/drag/pinch/wheel.
 - `src/ui/hud.ts` is the HTML HUD and tray; `src/session.ts` holds selection, speed, pause and the record, shared by both.
 - Depth sorting: `x + y` in tile units; ground and selection use fixed low layers, effects and text fixed high layers.

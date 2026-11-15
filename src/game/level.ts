@@ -1,7 +1,7 @@
 // The map: a square grid seen from above. The renderer turns it into isometric diamonds,
 // but nothing in here knows about the screen.
 
-export type Tile = 'grass' | 'path' | 'tree' | 'rock' | 'water' | 'spawn' | 'castle';
+export type Tile = 'grass' | 'path' | 'tree' | 'rock' | 'bush' | 'field' | 'water' | 'spawn' | 'castle';
 
 export interface Level {
   cols: number;
@@ -11,22 +11,22 @@ export interface Level {
   waypoints: [number, number][];
 }
 
-const LEGEND: Record<string, Tile> = { '.': 'grass', T: 'tree', r: 'rock', '~': 'water' };
+const LEGEND: Record<string, Tile> = { '.': 'grass', T: 'tree', r: 'rock', b: 'bush', f: 'field', '~': 'water' };
 
 // Scenery only. The path is carved on top from the waypoints below.
 const SCENERY = [
-  'TT.....~~~TT',
-  '...........T',
+  'TT..b..~~~TT',
+  '.........b.T',
   'T.........TT',
-  '............',
-  'T..r........',
-  '............',
+  '...........b',
+  'T..r.....fff',
+  '.........fff',
   'TT......r..T',
   'T..........T',
-  '............',
+  'b...........',
   '...........T',
-  'T.r.........',
-  'TTT...T....T',
+  'T.r....b....',
+  'TTb...T..b.T',
 ];
 
 const WAYPOINTS: [number, number][] = [

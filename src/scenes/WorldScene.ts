@@ -8,7 +8,7 @@ import { towerStats } from '../game/game';
 import { TILE_H, TILE_W, depthOf, tileAt, toScreen } from '../iso';
 import { PAL } from '../art/pixels';
 import {
-  drawCastle, drawGround, drawRock, drawTowerBue, drawTowerFrost, drawTowerKanon, drawTree, enemyArts,
+  drawBush, drawCastle, drawGround, drawRock, drawTent, drawTowerBue, drawTowerFrost, drawTowerKanon, drawTree, enemyArts,
   type SpriteArt,
 } from '../art/textures';
 import type { Session } from '../session';
@@ -18,7 +18,7 @@ const SELECTION_LAYER = -5000;
 const FX_LAYER = 10000;
 const TEXT_LAYER = 20000;
 /** Height in pixels of a tower's firing point above its tile. */
-const MUZZLE = 26;
+const MUZZLE = 30;
 const DRAG_START = 8;
 const MAX_ZOOM = 5;
 
@@ -64,7 +64,9 @@ export class WorldScene extends Phaser.Scene {
     register('frost', drawTowerFrost());
     register('castle', drawCastle());
     register('rock', drawRock());
-    for (let i = 0; i < 3; i++) register(`tree${i}`, drawTree(101 + i * 37));
+    register('bush', drawBush());
+    register('tent', drawTent());
+    for (let i = 0; i < 4; i++) register(`tree${i}`, drawTree(i));
     for (const [key, a] of Object.entries(enemyArts())) register(key, a);
 
     this.add.image(-ground.ox, ground.oy, 'ground').setOrigin(0, 0).setDepth(GROUND_DEPTH_LAYER);
@@ -72,9 +74,11 @@ export class WorldScene extends Phaser.Scene {
     // Scenery
     let treeN = 0;
     level.tiles.forEach((row, r) => row.forEach((tile, c) => {
-      if (tile === 'tree') this.placeStatic(`tree${treeN++ % 3}`, c, r, 2);
+      if (tile === 'tree') this.placeStatic(`tree${[0, 3, 1, 0, 2, 3][treeN++ % 6]}`, c, r, 2);
       else if (tile === 'rock') this.placeStatic('rock', c, r, 0);
+      else if (tile === 'bush') this.placeStatic('bush', c, r, 1);
       else if (tile === 'castle') this.placeStatic('castle', c, r, 0, 0.6);
+      else if (tile === 'spawn') this.placeStatic('tent', c, r, 0, 0.6);
     }));
 
     this.selGfx = this.add.graphics().setDepth(SELECTION_LAYER);
@@ -187,7 +191,7 @@ export class WorldScene extends Phaser.Scene {
     const towers = [...this.session.game.towers].sort((a, b) => depthOf(b.x, b.y) - depthOf(a.x, a.y));
     for (const t of towers) {
       const p = toScreen(t.x, t.y);
-      if (Math.abs(w.x - p.x) <= 11 && w.y >= p.y - 30 && w.y <= p.y + 6) return this.session.tapTower(t);
+      if (Math.abs(w.x - p.x) <= 12 && w.y >= p.y - 38 && w.y <= p.y + 8) return this.session.tapTower(t);
     }
     const { c, r } = tileAt(w.x, w.y);
     this.session.tapTile(c, r);
@@ -254,30 +258,32 @@ export class WorldScene extends Phaser.Scene {
     for (const [id, img] of this.towerSprites) if (!alive.has(id)) { img.destroy(); this.towerSprites.delete(id); }
   }
 
-  private enemyKey(e: Enemy): { key: string; flip: boolean } {
+  /** Which sprite to show, mirrored or not, and how far above the ground it floats. */
+  private enemyLook(e: Enemy): { key: string; flip: boolean; lift: number; scale: number } {
     const front = e.dx > 0.5 || e.dy > 0.5;
     const flip = e.dy > 0.5 || e.dx < -0.5;
-    const side = front ? 'front' : 'back';
-    const key = e.type === 'bat' ? `bat-${side}-${Math.floor(this.clock * 8 + e.id) % 2}` : `${e.type}-${side}`;
-    return { key, flip };
+    const flying = e.type === 'raven';
+    const frame = Math.floor(this.clock * (flying ? 8 : e.type === 'ogre' ? 3 : 5) + e.id * 0.37) % 2;
+    const key = `${e.type}-${front ? 'front' : 'back'}-${frame}`;
+    const lift = flying ? 11 + frame : frame;
+    return { key, flip, lift, scale: e.type === 'ogre' ? 2 : 1 };
   }
 
   private syncEnemies(): void {
     const alive = new Set<number>();
     for (const e of this.session.game.enemies) {
       alive.add(e.id);
-      const { key, flip } = this.enemyKey(e);
+      const { key, flip, lift, scale } = this.enemyLook(e);
       let img = this.enemySprites.get(e.id);
       if (!img) {
-        img = this.add.image(0, 0, key);
-        if (e.type === 'boss') img.setScale(2);
+        img = this.add.image(0, 0, key).setScale(scale);
         this.enemySprites.set(e.id, img);
       }
       const a = this.art.get(key)!;
-      img.setTexture(key).setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height).setFlipX(flip);
+      // Mirroring flips around the origin, so mirror the foot point too.
+      const fx = flip ? a.canvas.width - a.fx : a.fx;
+      img.setTexture(key).setOrigin(fx / a.canvas.width, a.fy / a.canvas.height).setFlipX(flip);
       const p = toScreen(e.x, e.y);
-      const bob = Math.floor(this.clock * (e.type === 'knight' ? 5 : 4) + e.id * 0.37) % 2;
-      const lift = e.type === 'bat' ? 10 + bob : bob;
       img.setPosition(Math.round(p.x), Math.round(p.y + 2 - lift)).setDepth(depthOf(e.x, e.y) + 0.4);
       if ((this.flashUntil.get(e.id) ?? 0) > this.clock) img.setTintFill(0xffffff);
       else if (e.slowTime > 0) img.setTint(hex(PAL.ice));
@@ -307,7 +313,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (Math.floor(this.clock * 3) % 2 === 0 || sel.kind === 'tower') {
       const a = toScreen(c, r), b = toScreen(c + 1, r), d = toScreen(c + 1, r + 1), e = toScreen(c, r + 1);
-      g.lineStyle(1, hex(sel.kind === 'tile' ? PAL.white : PAL.yellow), 1);
+      g.lineStyle(1, hex(sel.kind === 'tile' ? PAL.white : PAL.gold), 1);
       g.strokePoints([a, b, d, e], true);
     }
   }
@@ -320,23 +326,25 @@ export class WorldScene extends Phaser.Scene {
     // Shadows under flying enemies, health bars and tower level pips.
     for (const e of game.enemies) {
       const p = toScreen(e.x, e.y);
-      if (e.type === 'bat') g.fillStyle(hex(PAL.ink), 0.3).fillRect(Math.round(p.x - 4), Math.round(p.y + 1), 8, 2);
+      const look = this.enemyLook(e);
+      if (e.type === 'raven') g.fillStyle(hex(PAL.outline), 0.3).fillRect(Math.round(p.x - 4), Math.round(p.y + 1), 8, 2);
       if (e.hp < e.maxHp) {
-        const top = e.type === 'boss' ? 26 : e.type === 'knight' ? 18 : e.type === 'bat' ? 22 : 14;
-        const w = e.type === 'boss' ? 20 : 12;
+        const a = this.art.get(look.key)!;
+        const top = a.fy * look.scale + look.lift + 1;
+        const w = e.type === 'ogre' ? 20 : 12;
         const x = Math.round(p.x - w / 2);
         const y = Math.round(p.y - top);
         const f = Math.max(0, e.hp / e.maxHp);
-        g.fillStyle(hex(PAL.ink), 1).fillRect(x - 1, y - 1, w + 2, 3);
-        g.fillStyle(hex(f < 0.3 ? PAL.red : PAL.grass), 1).fillRect(x, y, Math.max(1, Math.round(w * f)), 1);
+        g.fillStyle(hex(PAL.outline), 1).fillRect(x - 1, y - 1, w + 2, 3);
+        g.fillStyle(hex(f < 0.3 ? PAL.red1 : PAL.grass1), 1).fillRect(x, y, Math.max(1, Math.round(w * f)), 1);
       }
     }
     for (const t of game.towers) {
       const p = toScreen(t.x, t.y);
       const x0 = Math.round(p.x - (t.level * 3 - 1) / 2);
-      g.fillStyle(hex(PAL.ink), 1).fillRect(x0 - 1, p.y + 6, t.level * 3 + 1, 3);
-      g.fillStyle(hex(PAL.yellow), 1);
-      for (let i = 0; i < t.level; i++) g.fillRect(x0 + i * 3, p.y + 7, 2, 1);
+      g.fillStyle(hex(PAL.outline), 1).fillRect(x0 - 1, p.y + 8, t.level * 3 + 1, 3);
+      g.fillStyle(hex(PAL.gold), 1);
+      for (let i = 0; i < t.level; i++) g.fillRect(x0 + i * 3, p.y + 9, 2, 1);
     }
 
     // Projectiles arc from the tower top down to the enemy.
@@ -348,15 +356,17 @@ export class WorldScene extends Phaser.Scene {
       if (s.type === 'bue') {
         const t = toScreen(s.tx, s.ty);
         const ang = Math.atan2(t.y - 6 - y, t.x - x);
-        g.fillStyle(hex(PAL.wood), 1);
+        g.fillStyle(hex(PAL.wood1), 1);
         for (let i = 1; i <= 3; i++) g.fillRect(Math.round(x - Math.cos(ang) * i), Math.round(y - Math.sin(ang) * i), 1, 1);
         g.fillStyle(hex(PAL.white), 1).fillRect(x, y, 1, 1);
       } else if (s.type === 'kanon') {
-        g.fillStyle(hex(PAL.ink), 1).fillRect(x - 1, y - 1, 3, 3);
-        g.fillStyle(hex(PAL.stoneDark), 1).fillRect(x - 1, y - 1, 1, 1);
+        g.fillStyle(hex(PAL.outline), 1).fillRect(x - 2, y - 2, 5, 5);
+        g.fillStyle(hex(PAL.rock1), 1).fillRect(x - 1, y - 1, 3, 3);
+        g.fillStyle(hex(PAL.stone1), 1).fillRect(x - 1, y - 1, 1, 1);
       } else {
-        g.fillStyle(hex(PAL.sky), 1).fillRect(x - 1, y - 1, 3, 3);
-        g.fillStyle(hex(PAL.ice), 1).fillRect(x, y, 1, 1);
+        g.fillStyle(hex(PAL.blue2), 1).fillRect(x - 1, y - 1, 3, 3);
+        g.fillStyle(hex(PAL.magic), 1).fillRect(x, y - 2, 1, 5).fillRect(x - 2, y, 5, 1);
+        g.fillStyle(hex(PAL.white), 1).fillRect(x, y, 1, 1);
       }
     }
 
@@ -391,8 +401,8 @@ export class WorldScene extends Phaser.Scene {
 
   private popup(x: number, y: number, text: string): void {
     const t = this.add.text(x, y, text, {
-      fontFamily: '"Press Start 2P", monospace', fontSize: '8px', color: PAL.yellow,
-      stroke: PAL.ink, strokeThickness: 2,
+      fontFamily: '"Press Start 2P", monospace', fontSize: '8px', color: PAL.gold,
+      stroke: PAL.outline, strokeThickness: 2,
     }).setOrigin(0.5, 1).setDepth(TEXT_LAYER);
     this.tweens.add({ targets: t, y: y - 14, alpha: 0, duration: 900, ease: 'Quad.easeIn', onComplete: () => t.destroy() });
   }
@@ -405,8 +415,8 @@ export class WorldScene extends Phaser.Scene {
         break;
       case 'hit': {
         const p = toScreen(e.shot.x, e.shot.y);
-        if (e.shot.type === 'kanon') { this.burst(p.x, p.y, 6, PAL.orange, 8, 30); this.burst(p.x, p.y, 6, PAL.yellow, 6, 20); }
-        else if (e.shot.type === 'frost') this.burst(p.x, p.y, 6, PAL.ice, 6, 25, false);
+        if (e.shot.type === 'kanon') { this.burst(p.x, p.y, 4, PAL.rock1, 10, 35); this.burst(p.x, p.y, 4, PAL.dirt1, 8, 25); }
+        else if (e.shot.type === 'frost') this.burst(p.x, p.y, 6, PAL.magic, 8, 25, false);
         else this.burst(p.x, p.y, 6, PAL.white, 2, 15);
         break;
       }
@@ -415,9 +425,12 @@ export class WorldScene extends Phaser.Scene {
         break;
       case 'kill': {
         const p = toScreen(e.enemy.x, e.enemy.y);
-        const color = { slime: PAL.grass, bat: PAL.purple, knight: PAL.stone, boss: PAL.red }[e.enemy.type];
-        this.burst(p.x, p.y, 6, color, e.enemy.type === 'boss' ? 30 : 10, 35);
-        this.burst(p.x, p.y, 6, PAL.white, 3, 25);
+        // A cartoon poof of dust, a few bits of the enemy and some gold.
+        const color = { peasant: PAL.red2, raven: PAL.raven1, knight: PAL.metal2, ogre: PAL.ogre1 }[e.enemy.type];
+        const big = e.enemy.type === 'ogre';
+        this.burst(p.x, p.y, 8, PAL.white, big ? 24 : 10, 22, false);
+        this.burst(p.x, p.y, 8, color, big ? 20 : 6, 35);
+        this.burst(p.x, p.y, 8, PAL.gold, big ? 12 : 4, 30);
         this.popup(p.x, p.y - 14, `+${e.enemy.reward}`);
         play('pop');
         break;
@@ -428,13 +441,13 @@ export class WorldScene extends Phaser.Scene {
         break;
       case 'build': case 'upgrade': {
         const p = toScreen(e.tower.x, e.tower.y);
-        this.burst(p.x, p.y, 2, e.type === 'build' ? PAL.sand : PAL.yellow, 10, 30);
+        this.burst(p.x, p.y, 2, e.type === 'build' ? PAL.dirt1 : PAL.gold, 10, 30);
         play('build');
         break;
       }
       case 'sell': {
         const p = toScreen(e.tower.x, e.tower.y);
-        this.burst(p.x, p.y, 4, PAL.stone, 12, 30);
+        this.burst(p.x, p.y, 4, PAL.stone2, 12, 30);
         play('sell');
         break;
       }

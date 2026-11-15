@@ -94,7 +94,7 @@ export function setupHud(session: Session): void {
 
   // ---------- Events ----------
   session.onEvent((e) => {
-    if (e.type === 'waveStart') toast(isBossWave(e.wave) ? `BØLGE ${e.wave}: KÆMPESLIM!` : `BØLGE ${e.wave}`);
+    if (e.type === 'waveStart') toast(isBossWave(e.wave) ? `BØLGE ${e.wave}: TROLDEKONGEN!` : `BØLGE ${e.wave}`);
     else if (e.type === 'waveCleared') toast(`BØLGE ${e.wave} KLARET! +${e.bonus}`);
     else if (e.type === 'gameOver') {
       $('overText').textContent = e.wavesCleared > 0

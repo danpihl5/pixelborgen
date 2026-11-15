@@ -1,9 +1,16 @@
 // Generates every texture the game uses. Each sprite records its "foot": the pixel that
 // stands on the tile centre, so the renderer can place it without knowing its size.
+//
+// Look: warm medieval colours and faceted low-poly shading (a nod to Diplomacy is Not an
+// Option), chunky chibi characters with big square heads and thick outlines, red army
+// against blue towers (a nod to Fat Princess).
 
+import type { EnemyType } from '../game/data';
 import type { Level, Tile } from '../game/level';
 import { TILE_H, TILE_W } from '../iso';
-import { drawRows, isoBlock, makeCanvas, PAL, px, rng, type Ctx } from './pixels';
+import {
+  bricks, drawRows, fillTri, isoBlock, line, makeCanvas, outline, PAL, planks, px, rng, type Ctx,
+} from './pixels';
 
 export interface SpriteArt {
   canvas: HTMLCanvasElement;
@@ -12,24 +19,35 @@ export interface SpriteArt {
   fy: number;
 }
 
-/** Thickness of the floating island's dirt edge. */
-export const GROUND_DEPTH = 8;
+/** Thickness of the floating island's edge: a dirt band over rock. */
+export const GROUND_DEPTH = 10;
 
 // ---------- Ground ----------
 
+const GRASS = [PAL.grass1, PAL.grass2, PAL.grass3];
+const DIRT = [PAL.dirt1, PAL.dirt2, PAL.dirt3];
+const WATER = [PAL.water1, PAL.water2, PAL.water2];
+
+/** Smooth-ish noise per tile so neighbouring facets share tones and form patches. */
+function tone(c: number, r: number): number {
+  const v = (Math.sin(c * 1.3 + r * 0.7) + Math.sin(r * 1.1 - c * 0.45)) / 4 + 0.5;
+  return Math.min(2, Math.floor(v * 3));
+}
+
 /**
- * The whole map as one image. Its top-left corner sits at world (-rows * TILE_W / 2, 0),
- * which puts tile (0, 0)'s top corner at the world origin.
+ * The whole map as one image, outlined. Place its top-left corner at world (-ox, oy);
+ * that puts tile (0, 0)'s top corner at the world origin.
  */
 export function drawGround(level: Level): { canvas: HTMLCanvasElement; ox: number; oy: number } {
-  const w = (level.cols + level.rows) * (TILE_W / 2);
-  const h = (level.cols + level.rows) * (TILE_H / 2) + GROUND_DEPTH;
+  const w = (level.cols + level.rows) * (TILE_W / 2) + 2;
+  const h = (level.cols + level.rows) * (TILE_H / 2) + GROUND_DEPTH + 2;
   const [cv, ctx] = makeCanvas(w, h);
   const rand = rng(20261115);
-  const ox = level.rows * (TILE_W / 2);
+  const ox = level.rows * (TILE_W / 2) + 1;
   const tileAt = (c: number, r: number): Tile | null =>
     r < 0 || r >= level.rows || c < 0 || c >= level.cols ? null : level.tiles[r][c];
   const isRoad = (t: Tile | null) => t === 'path' || t === 'spawn' || t === 'castle';
+  const half = TILE_W / 2;
 
   // Back to front so nearer blocks cover the sides of those behind them.
   for (let sum = 0; sum < level.cols + level.rows - 1; sum++) {
@@ -37,290 +55,427 @@ export function drawGround(level: Level): { canvas: HTMLCanvasElement; ox: numbe
       const r = sum - c;
       if (r < 0 || r >= level.rows) continue;
       const tile = level.tiles[r][c];
-      const bx = ox + (c - r) * (TILE_W / 2) - TILE_W / 2;
-      const by = (c + r) * (TILE_H / 2);
-      const checker = (c + r) % 2 === 0;
-      const noise = new Map<string, string>();
+      const bx = ox + (c - r) * half - half;
+      const by = 1 + (c + r) * (TILE_H / 2);
 
-      let top: (x: number, y: number) => string;
-      if (isRoad(tile)) {
+      // Two flat facets per tile, split one of two ways: the low-poly look.
+      const set = isRoad(tile) ? DIRT : tile === 'water' ? WATER : GRASS;
+      const t0 = tone(c, r);
+      const t1 = Math.max(0, Math.min(2, t0 + (rand() < 0.5 ? -1 : 1)));
+      const vertical = rand() < 0.5;
+      const facet = (x: number, y: number) => ((vertical ? x < half : y < TILE_H / 2) ? set[t0] : set[t1]);
+
+      let top: (x: number, y: number) => string = facet;
+      if (tile === 'field') {
         top = (x, y) => {
-          const k = `${x},${y}`;
-          if (!noise.has(k)) {
-            const v = rand();
-            noise.set(k, v < 0.1 ? PAL.sandDark : v < 0.15 ? PAL.sandLight : PAL.sand);
-          }
-          return noise.get(k)!;
-        };
-      } else if (tile === 'water') {
-        top = (x, y) => ((x + y * 3) % 11 === 0 ? PAL.waterLight : (y + x) % 17 === 0 ? PAL.ice : PAL.water);
-      } else {
-        const base = checker ? PAL.grass : '#3dbd69';
-        top = (x, y) => {
-          const k = `${x},${y}`;
-          if (!noise.has(k)) {
-            const v = rand();
-            noise.set(k, v < 0.05 ? PAL.grassDark : v < 0.075 ? PAL.grassLight : base);
-          }
-          return noise.get(k)!;
+          const s = (x + y * 2) % 6;
+          return s === 0 ? PAL.wheat3 : s === 2 ? PAL.wheat1 : PAL.wheat2;
         };
       }
-      const bottom = isoBlock(ctx, bx, by, TILE_W, GROUND_DEPTH, top, PAL.dirt, PAL.woodDark);
+      const left = (_x: number, k: number) => (k === GROUND_DEPTH - 1 ? PAL.outline : k < 3 ? PAL.cliff : (_x * 7 + k * 3) % 11 === 0 ? PAL.rock3 : PAL.rock1);
+      const right = (_x: number, k: number) => (k === GROUND_DEPTH - 1 ? PAL.outline : k < 3 ? PAL.cliffDark : (_x * 5 + k * 3) % 13 === 0 ? PAL.rock3 : PAL.rock2);
+      const bottom = isoBlock(ctx, bx, by, TILE_W, GROUND_DEPTH, top, left, right);
 
-      // Dark rim where the road meets grass, so the road reads as a groove.
-      if (isRoad(tile)) {
-        const half = TILE_W / 2;
+      // Edges of the top diamond, per column, for rims and foam.
+      const topEdge = (x: number) => (x < half ? Math.floor((half - 1 - x) / 2) : Math.floor((x - half) / 2));
+      const rim = (match: (t: Tile | null) => boolean, color: string) => {
         for (let x = 0; x < TILE_W; x++) {
-          const yTop = x < half ? Math.floor((half - 1 - x) / 2) : Math.floor((x - half) / 2);
-          const yBot = bottom[x];
-          // The four diamond edges border (c-1, r), (c, r-1), (c, r+1) and (c+1, r).
-          if (x < half && !isRoad(tileAt(c - 1, r))) px(ctx, bx + x, by + yTop, PAL.dirt);
-          if (x >= half && !isRoad(tileAt(c, r - 1))) px(ctx, bx + x, by + yTop, PAL.dirt);
-          if (x < half && !isRoad(tileAt(c, r + 1))) px(ctx, bx + x, by + yBot, PAL.dirt);
-          if (x >= half && !isRoad(tileAt(c + 1, r))) px(ctx, bx + x, by + yBot, PAL.dirt);
+          const yTop = topEdge(x), yBot = bottom[x];
+          if (x < half && !match(tileAt(c - 1, r))) px(ctx, bx + x, by + yTop, color);
+          if (x >= half && !match(tileAt(c, r - 1))) px(ctx, bx + x, by + yTop, color);
+          if (x < half && !match(tileAt(c, r + 1))) px(ctx, bx + x, by + yBot, color);
+          if (x >= half && !match(tileAt(c + 1, r))) px(ctx, bx + x, by + yBot, color);
         }
-      }
+      };
 
-      if (tile === 'spawn') drawPortal(ctx, bx, by);
-      if (tile === 'grass') {
+      if (isRoad(tile)) {
+        rim(isRoad, PAL.dirtDark);
+        for (let i = 0; i < 3; i++) {
+          const x = bx + 9 + Math.floor(rand() * 14), y = by + 5 + Math.floor(rand() * 6);
+          px(ctx, x, y, PAL.pebble); px(ctx, x, y + 1, PAL.dirtDark);
+        }
+      } else if (tile === 'water') {
+        rim((t) => t === 'water', PAL.foam);
+        for (let i = 0; i < 2; i++) px(ctx, bx + 10 + Math.floor(rand() * 10), by + 5 + Math.floor(rand() * 6), PAL.foam, 3, 1);
+      } else if (tile === 'grass') {
         const v = rand();
-        const dx = bx + 10 + Math.floor(rand() * 12);
-        const dy = by + 5 + Math.floor(rand() * 6);
-        if (v < 0.35) { px(ctx, dx, dy, PAL.grassDark); px(ctx, dx + 2, dy, PAL.grassDark); px(ctx, dx + 1, dy + 1, PAL.grassDark); }
-        else if (v < 0.47) { px(ctx, dx, dy, rand() < 0.5 ? PAL.yellow : PAL.white); px(ctx, dx + 1, dy + 1, PAL.orange); px(ctx, dx + 2, dy, PAL.white); }
+        const x = bx + 9 + Math.floor(rand() * 13), y = by + 5 + Math.floor(rand() * 6);
+        if (v < 0.4) {
+          px(ctx, x, y, PAL.grassDark); px(ctx, x + 2, y, PAL.grassDark); px(ctx, x + 1, y + 1, PAL.grassDark);
+        } else if (v < 0.58) {
+          const petal = [PAL.white, PAL.pink1, PAL.gold][Math.floor(rand() * 3)];
+          px(ctx, x, y - 1, petal); px(ctx, x - 1, y, petal); px(ctx, x + 1, y, petal); px(ctx, x, y + 1, petal);
+          px(ctx, x, y, PAL.gold === petal ? PAL.roof1 : PAL.gold);
+        } else if (v < 0.66) {
+          px(ctx, x, y, PAL.grassLight, 2, 1); px(ctx, x + 3, y + 1, PAL.grassLight, 2, 1);
+        }
       }
     }
   }
-  return { canvas: cv, ox, oy: 0 };
+  outline(cv);
+  return { canvas: cv, ox, oy: -1 };
 }
 
-function drawPortal(ctx: Ctx, bx: number, by: number): void {
-  // A dark hole in the road where the monsters crawl out.
-  const rows = ['....kkkkkk....', '..kkpppppkkk..', '.kppkkkkkkppk.', 'kppkkkkkkkkppk', '.kppkkkkkkppk.', '..kkpppppkkk..', '....kkkkkk....'];
-  drawRows(ctx, rows, { k: PAL.ink, p: PAL.purple }, bx + 9, by + 4);
+// ---------- Shapes ----------
+
+/** An upright isometric prism whose bottom centre is at (cx, footY). Width must be a multiple of 4. Returns the top centre's y. */
+function prism(
+  ctx: Ctx, cx: number, footY: number, w: number, height: number,
+  top: string | ((x: number, y: number) => string), left: string | ((x: number, k: number) => string), right: string | ((x: number, k: number) => string),
+): number {
+  const oy = footY - w / 4 - height;
+  isoBlock(ctx, cx - w / 2, oy, w, height, typeof top === 'string' ? () => top : top, left, right);
+  return oy + w / 4;
+}
+
+/** A four-sided roof whose base is a diamond `w` wide centred at (cx, cy). */
+function pyramid(ctx: Ctx, cx: number, cy: number, w: number, h: number, light: string, dark: string, stripe?: [string, string]): number {
+  const L: [number, number] = [cx - w / 2, cy];
+  const R: [number, number] = [cx + w / 2, cy];
+  const F: [number, number] = [cx, cy + w / 4];
+  const A: [number, number] = [cx, cy - h];
+  fillTri(ctx, L, F, A, stripe ? (_x, y) => (y % 3 === 0 ? stripe[0] : light) : light);
+  fillTri(ctx, F, R, A, stripe ? (_x, y) => (y % 3 === 0 ? stripe[1] : dark) : dark);
+  return cy - h;
+}
+
+/** A Byzantine dome sitting on (cx, baseY). */
+function dome(ctx: Ctx, cx: number, baseY: number, rw: number, rh: number, c1: string, c2: string, c3: string): number {
+  for (let dy = 0; dy <= rh; dy++) {
+    const hw = Math.round(rw * Math.sqrt(1 - (dy / rh) ** 2));
+    for (let x = cx - hw; x < cx + hw; x++) {
+      const f = (x - (cx - hw)) / Math.max(1, 2 * hw);
+      px(ctx, x, baseY - dy, f < 0.34 ? c1 : f < 0.7 ? c2 : c3);
+    }
+  }
+  px(ctx, cx - Math.round(rw / 2), baseY - Math.round(rh * 0.6), PAL.white);
+  return baseY - rh;
+}
+
+function banner(ctx: Ctx, x: number, y: number, c1: string, c2: string, pole = 9): void {
+  px(ctx, x, y - pole, PAL.outline, 1, pole);
+  drawRows(ctx, ['aaaa', 'abbbb', 'aaab', 'a.a'], { a: c1, b: c2 }, x + 1, y - pole);
+}
+
+function circleBlob(ctx: Ctx, circles: [number, number, number][], shade: (x: number, y: number) => string): void {
+  const xs = circles.flatMap(([x, , r]) => [x - r, x + r]);
+  const ys = circles.flatMap(([, y, r]) => [y - r, y + r]);
+  for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)); y++) {
+    for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)); x++) {
+      if (circles.some(([cx, cy, r]) => (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= r * r)) px(ctx, x, y, shade(x, y));
+    }
+  }
 }
 
 // ---------- Scenery ----------
 
-export function drawTree(seed: number): SpriteArt {
-  const [cv, ctx] = makeCanvas(16, 26);
-  const rand = rng(seed);
-  const cx = 8;
-  px(ctx, cx - 1, 20, PAL.woodDark, 2, 5);
-  px(ctx, cx - 2, 24, PAL.ink, 4, 1);
-  const layers = [{ top: 0, h: 8, w: 8 }, { top: 5, h: 9, w: 12 }, { top: 11, h: 10, w: 16 }];
-  for (const L of layers) {
-    for (let y = 0; y < L.h; y++) {
-      const half = Math.max(1, Math.round(((y + 1) / L.h) * (L.w / 2)));
-      for (let x = cx - half; x < cx + half; x++) {
-        const edge = x === cx - half || x === cx + half - 1 || y === L.h - 1;
-        const color = edge ? PAL.ink : x < cx ? (rand() < 0.15 ? PAL.grassLight : PAL.grass) : PAL.grassDark;
-        px(ctx, x, L.top + y, color);
-      }
+export function drawTree(variant: number): SpriteArt {
+  if (variant === 3) {
+    // Cypress: tall and Mediterranean.
+    const [cv, ctx] = makeCanvas(14, 32);
+    px(ctx, 6, 24, PAL.wood2, 2, 4);
+    for (let y = 2; y <= 26; y++) {
+      const t = (y - 14) / 12.5;
+      const hw = Math.round(4.6 * Math.sqrt(Math.max(0, 1 - t * t)));
+      for (let x = 7 - hw; x < 7 + hw; x++) px(ctx, x, y, x < 6 ? PAL.grass3 : x < 8 ? PAL.grassDark : '#3c7426');
     }
+    px(ctx, 5, 9, PAL.grass2, 1, 3);
+    return { canvas: outline(cv), fx: 7, fy: 28 };
   }
-  return { canvas: cv, fx: 8, fy: 23 };
+  const [cv, ctx] = makeCanvas(24, 30);
+  const rand = rng(101 + variant * 37);
+  px(ctx, 10, 17, PAL.wood2, 2, 9);
+  px(ctx, 12, 17, PAL.wood3, 1, 9);
+  const big = 7 + Math.floor(rand() * 2);
+  circleBlob(ctx, [[12, 11, big], [7, 14, 5], [17, 14, 5]], (x, y) => {
+    const d = (x - 12) + (y - 11) * 1.2;
+    return d < -5 ? PAL.grassLight : d < 2 ? PAL.grass1 : d < 7 ? PAL.grass3 : PAL.grassDark;
+  });
+  if (variant === 1) for (let i = 0; i < 4; i++) px(ctx, 6 + Math.floor(rand() * 12), 7 + Math.floor(rand() * 9), PAL.red2);
+  return { canvas: outline(cv), fx: 11, fy: 26 };
+}
+
+export function drawBush(): SpriteArt {
+  const [cv, ctx] = makeCanvas(18, 13);
+  circleBlob(ctx, [[6, 7, 4.5], [11, 6, 5], [14, 8, 3.5]], (x, y) => ((x - 9) + (y - 6) < -2 ? PAL.grass1 : (x - 9) + (y - 6) < 3 ? PAL.grass3 : PAL.grassDark));
+  px(ctx, 7, 5, PAL.red2); px(ctx, 12, 4, PAL.red2); px(ctx, 10, 8, PAL.red2);
+  return { canvas: outline(cv), fx: 9, fy: 10 };
 }
 
 export function drawRock(): SpriteArt {
-  const [cv, ctx] = makeCanvas(14, 11);
-  isoBlock(ctx, 1, 2, 12, 4, (x, y) => (x + y < 8 ? PAL.white : PAL.stone), PAL.stoneDark, PAL.slate, PAL.ink);
-  px(ctx, 5, 1, PAL.stone, 4, 1);
-  return { canvas: cv, fx: 7, fy: 7 };
+  const [cv, ctx] = makeCanvas(18, 14);
+  prism(ctx, 9, 11, 12, 4, PAL.rock1, PAL.rock2, PAL.rock3);
+  prism(ctx, 7, 7, 8, 2, PAL.stone2, PAL.rock1, PAL.rock2);
+  return { canvas: outline(cv), fx: 9, fy: 9 };
 }
 
-// ---------- Towers ----------
-
-/** An upright isometric prism whose bottom centre is at (cx, footY). Width must be a multiple of 4. */
-function prism(ctx: Ctx, cx: number, footY: number, w: number, height: number, top: string, left: string, right: string): number {
-  const oy = footY - w / 4 - height;
-  isoBlock(ctx, cx - w / 2, oy, w, height, () => top, left, right);
-  return oy + w / 4; // centre of the top face
+export function drawTent(): SpriteArt {
+  // The red army's camp, where the enemies march out.
+  const [cv, ctx] = makeCanvas(32, 34);
+  const cx = 16, base = 26;
+  const apex = pyramid(ctx, cx, base, 26, 16, PAL.red1, PAL.red2, [PAL.red2, PAL.red3]);
+  fillTri(ctx, [cx - 8, base + 3], [cx - 3, base + 5], [cx - 4, base - 5], PAL.outline);
+  banner(ctx, cx, apex, PAL.red2, PAL.red3, 7);
+  return { canvas: outline(cv), fx: cx, fy: base + 2 };
 }
 
-const TOWER_W = 26;
-const TOWER_H = 42;
-const TOWER_FOOT = 36;
+// ---------- Towers (blue army) ----------
 
-function towerBase(ctx: Ctx): number {
-  return prism(ctx, TOWER_W / 2, TOWER_FOOT, 24, 3, PAL.stone, PAL.stoneDark, PAL.slate);
+const TOWER_W = 32;
+const TOWER_H = 54;
+const FOOT = 46;
+const stoneL = bricks(PAL.stone1, PAL.stone3);
+const stoneR = bricks(PAL.stone2, PAL.stone3);
+
+function towerBase(ctx: Ctx, cx: number): number {
+  return prism(ctx, cx, FOOT, 24, 4, PAL.stone2, bricks(PAL.stone2, PAL.mortar), bricks(PAL.stone3, PAL.mortar));
 }
 
 export function drawTowerBue(): SpriteArt {
   const [cv, ctx] = makeCanvas(TOWER_W, TOWER_H);
   const cx = TOWER_W / 2;
-  const baseTop = towerBase(ctx);
-  const top = prism(ctx, cx, baseTop, 16, 15, PAL.wood, PAL.stone, PAL.stoneDark);
-  // Merlons on the four corners of the roof.
-  for (const [dx, dy] of [[-8, 0], [6, 0], [-1, -4], [-1, 3]]) px(ctx, cx + dx, top + dy - 2, PAL.woodDark, 2, 2);
-  // Arrow slits.
-  px(ctx, cx - 5, top + 8, PAL.ink, 1, 4);
-  px(ctx, cx + 4, top + 8, PAL.ink, 1, 4);
-  // Flag.
-  px(ctx, cx, top - 12, PAL.ink, 1, 11);
-  drawRows(ctx, ['rrrr', 'rrrrr', 'rrrr'], { r: PAL.red }, cx + 1, top - 12);
-  return { canvas: cv, fx: cx, fy: TOWER_FOOT - 6 };
+  const base = towerBase(ctx, cx);
+  const body = prism(ctx, cx, base, 16, 13, PAL.stone1, stoneL, stoneR);
+  px(ctx, cx - 5, body + 7, PAL.outline, 1, 4);
+  px(ctx, cx + 4, body + 7, PAL.outline, 1, 4);
+  const gallery = prism(ctx, cx, body + 3, 20, 4, PAL.wood1, planks(PAL.wood1, PAL.wood2), planks(PAL.wood2, PAL.wood3));
+  const apex = pyramid(ctx, cx, gallery, 24, 13, PAL.roof1, PAL.roof2, [PAL.roof2, '#933a22']);
+  banner(ctx, cx, apex, PAL.blue2, PAL.blue1);
+  return { canvas: outline(cv), fx: cx, fy: FOOT };
 }
 
 export function drawTowerKanon(): SpriteArt {
+  // A wheeled catapult on a low stone base.
   const [cv, ctx] = makeCanvas(TOWER_W, TOWER_H);
   const cx = TOWER_W / 2;
-  const baseTop = towerBase(ctx);
-  const top = prism(ctx, cx, baseTop, 20, 8, PAL.wood, PAL.wood, PAL.woodDark);
-  const rows = [
-    '.......kkk',
-    '......kSdk',
-    '.....kSddk',
-    '..kkkSddk.',
-    '.kSSddddk.',
-    'kSddddddk.',
-    'kSddddddk.',
-    'kddddddk..',
-    '.kddddk...',
-    '..kkkk....',
-  ];
-  drawRows(ctx, rows, { k: PAL.ink, d: PAL.slate, S: PAL.stoneDark }, cx - 5, top - 9);
-  return { canvas: cv, fx: cx, fy: TOWER_FOOT - 6 };
+  const top = towerBase(ctx, cx);
+  const beam = top - 4;
+  // Support frame and pivot.
+  line(ctx, cx - 4, beam, cx - 1, beam - 11, PAL.wood3, 2);
+  line(ctx, cx + 4, beam, cx + 1, beam - 11, PAL.wood2, 2);
+  // Throwing arm: counterweight low on the right, bucket with a boulder high on the left.
+  line(ctx, cx + 8, beam - 6, cx - 9, beam - 18, PAL.wood1, 2);
+  px(ctx, cx + 6, beam - 7, PAL.rock2, 5, 5);
+  px(ctx, cx + 6, beam - 7, PAL.rock1, 2, 2);
+  drawRows(ctx, ['.rrr.', 'rRrrr', 'rrrrr', 'ddddd', '.ddd.'], { r: PAL.rock1, R: PAL.stone1, d: PAL.wood3 }, cx - 14, beam - 24);
+  // Base beam and wheels.
+  px(ctx, cx - 11, beam, PAL.wood1, 22, 1);
+  px(ctx, cx - 11, beam + 1, PAL.wood2, 22, 2);
+  for (const wx of [cx - 8, cx + 7]) {
+    circleBlob(ctx, [[wx, beam + 3, 3.2]], () => PAL.wood3);
+    px(ctx, wx - 1, beam + 2, PAL.metal2, 2, 2);
+  }
+  banner(ctx, cx, beam - 11, PAL.blue2, PAL.blue1, 6);
+  return { canvas: outline(cv), fx: cx, fy: FOOT };
 }
 
 export function drawTowerFrost(): SpriteArt {
+  // The mage tower: white stone, blue band, blue dome and a floating crystal.
   const [cv, ctx] = makeCanvas(TOWER_W, TOWER_H);
   const cx = TOWER_W / 2;
-  const baseTop = towerBase(ctx);
-  const top = prism(ctx, cx, baseTop, 16, 12, PAL.sky, PAL.blue, '#29408f');
-  px(ctx, cx - 5, top + 6, PAL.ice, 1, 3);
-  px(ctx, cx + 4, top + 6, PAL.ice, 1, 3);
-  const crystal = ['...k...', '..kCk..', '.kCwck.', 'kCCwcck', '.kCcck.', '..kck..', '...k...'];
-  drawRows(ctx, crystal, { k: PAL.ink, C: PAL.ice, c: PAL.sky, w: PAL.white }, cx - 3, top - 11);
-  return { canvas: cv, fx: cx, fy: TOWER_FOOT - 6 };
+  const base = towerBase(ctx, cx);
+  const band = (paint: (x: number, k: number) => string, c: string) => (x: number, k: number) => (k < 3 ? c : paint(x, k));
+  const body = prism(ctx, cx, base, 16, 15, PAL.stone1, band(stoneL, PAL.blue2), band(stoneR, PAL.blue3));
+  drawRows(ctx, ['.o.', 'obo', 'obo'], { o: PAL.outline, b: PAL.blue3 }, cx - 6, body + 9);
+  px(ctx, cx - 9, body + 2, PAL.gold, 18, 1);
+  const top = dome(ctx, cx, body + 1, 9, 9, PAL.blue1, PAL.blue2, PAL.blue3);
+  px(ctx, cx - 1, top - 3, PAL.gold, 2, 3);
+  drawRows(ctx, ['..c..', '.cCc.', 'cCwCc', '.cCc.', '..c..'], { c: PAL.blue2, C: PAL.magic, w: PAL.white }, cx - 3, top - 10);
+  return { canvas: outline(cv), fx: cx, fy: FOOT };
 }
 
 export function drawCastle(): SpriteArt {
-  const [cv, ctx] = makeCanvas(48, 60);
-  const cx = 24;
-  const foot = 52;
-  prism(ctx, cx, foot, 36, 4, PAL.stone, PAL.stoneDark, PAL.slate);
-  const keep = prism(ctx, cx, foot - 4, 24, 20, PAL.stone, PAL.stone, PAL.stoneDark);
-  // Gate on the front-left face.
-  drawRows(ctx, ['.kkk.', 'kdddk', 'kdddk', 'kdddk', 'kdddk'], { k: PAL.ink, d: PAL.slate }, cx - 9, keep + 13);
-  // Corner turrets.
-  for (const dx of [-12, 12]) {
-    const t = prism(ctx, cx + dx, foot - 6, 8, 26, PAL.stone, PAL.stone, PAL.stoneDark);
-    px(ctx, cx + dx, t - 10, PAL.ink, 1, 9);
-    drawRows(ctx, ['yyy', 'yyyy', 'yyy'], { y: PAL.yellow }, cx + dx + 1, t - 10);
+  const [cv, ctx] = makeCanvas(68, 80);
+  const cx = 34, foot = 70;
+  prism(ctx, cx, foot, 44, 4, PAL.rock1, PAL.rock2, PAL.rock3);
+  const wallTop = prism(ctx, cx, foot - 4, 36, 11, PAL.stone2, stoneL, stoneR);
+  // Merlons along the front edges of the wall.
+  for (let i = 0; i <= 16; i += 4) {
+    px(ctx, cx - 18 + i, wallTop + Math.floor(i / 2) - 2, PAL.stone1, 2, 2);
+    px(ctx, cx + 16 - i, wallTop + Math.floor(i / 2) - 2, PAL.stone2, 2, 2);
   }
-  const t = prism(ctx, cx, foot - 18, 8, 22, PAL.stone, PAL.stone, PAL.stoneDark);
-  px(ctx, cx, t - 12, PAL.ink, 1, 11);
-  drawRows(ctx, ['rrrr', 'rrrrr', 'rrrr'], { r: PAL.red }, cx + 1, t - 12);
-  return { canvas: cv, fx: cx, fy: foot - 9 };
+  // Gate in the left wall.
+  drawRows(ctx, ['.ooo.', 'owwwo', 'owdwo', 'owdwo', 'owwwo', 'owwwo'], { o: PAL.outline, w: PAL.wood2, d: PAL.wood3 }, cx - 11, wallTop + 9);
+  const keep = prism(ctx, cx, wallTop + 2, 20, 17, PAL.stone1, stoneL, stoneR);
+  drawRows(ctx, ['.o.', 'obo', 'obo'], { o: PAL.outline, b: PAL.blue3 }, cx - 6, keep + 8);
+  const apex = pyramid(ctx, cx, keep, 24, 13, PAL.roof1, PAL.roof2, [PAL.roof2, '#933a22']);
+  banner(ctx, cx, apex, PAL.blue2, PAL.blue1, 10);
+  // Corner towers: a blue dome on the left, a red cone on the right.
+  const lt = prism(ctx, cx - 17, foot - 8, 8, 25, PAL.stone1, stoneL, stoneR);
+  dome(ctx, cx - 17, lt + 1, 5, 5, PAL.blue1, PAL.blue2, PAL.blue3);
+  const rt = prism(ctx, cx + 17, foot - 8, 8, 25, PAL.stone1, stoneL, stoneR);
+  const ra = pyramid(ctx, cx + 17, rt, 12, 9, PAL.roof1, PAL.roof2);
+  banner(ctx, cx + 17, ra, PAL.blue2, PAL.blue1, 6);
+  // The princess, waving from the wall.
+  const py = wallTop + 4, pxx = cx + 6;
+  drawRows(ctx, [
+    '.g.g.',
+    '.ggg.',
+    'yssyy',
+    'ysesy',
+    '.sss.s',
+    '.ppp.s',
+    'ppppp',
+    'PPPPP',
+  ], { g: PAL.gold, y: PAL.gold, s: PAL.skin1, e: PAL.outline, p: PAL.pink1, P: PAL.pink2 }, pxx, py - 8);
+  return { canvas: outline(cv), fx: cx, fy: foot - 11 };
 }
 
-// ---------- Enemies ----------
-// Drawn facing down-right. The renderer mirrors them for down-left, and the "back" variants
-// (eyes hidden) are used when walking away from the camera.
+// ---------- Characters (red army) ----------
+// Drawn facing down-right. The renderer mirrors them for down-left; the "back" variants are
+// used when walking away from the camera. Frames 0 and 1 are a two-step walk (or wing beat).
 
-const SLIME = [
-  '......kkkk......',
-  '....kkllggkk....',
-  '...kllgggggGk...',
-  '..klgggggggggk..',
-  '.klgggggEEgEEgk.',
-  '.kggggggEegEegk.',
-  'kgggggggggggggGk',
-  'kgggggggggggggGk',
-  'kGgggggggggggGGk',
-  '.kGGgggggggGGGk.',
-  '..kkGGGGGGGGGkk.',
-  '....kkkkkkkkk...',
-];
+interface Chibi {
+  skin: [string, string];
+  body: [string, string];
+  legs: string;
+  fat?: boolean;
+  hair?: string;
+  hat?: boolean;
+  helmet?: boolean;
+  crown?: boolean;
+  item?: 'fork' | 'sword' | 'club';
+  shield?: boolean;
+}
 
-const BAT_UP = [
-  '.k............k.',
-  '.kk..........kk.',
-  '.kpk...kk...kpk.',
-  '.kppk.kppk.kppk.',
-  '.kpppkppppkpppk.',
-  '..kpppppEepppk..',
-  '...kpppppppppk..',
-  '.....kpppppk....',
-  '......kk.kk.....',
-];
+function chibi(o: Chibi, back: boolean, frame: number): SpriteArt {
+  const [cv, ctx] = makeCanvas(22, 26);
+  const OX = 3, OY = 5;
+  const P = (x: number, y: number, c: string, w = 1, h = 1) => px(ctx, OX + x, OY + y, c, w, h);
 
-const BAT_DOWN = [
-  '................',
-  '................',
+  // Legs and feet, one lifted per frame.
+  const legX = o.fat ? [3, 9] : [4, 8];
+  const legTop = o.fat ? 15 : 14;
+  legX.forEach((lx, i) => {
+    const lift = i === frame ? 1 : 0;
+    P(lx, legTop, o.legs, 2, 3 - lift);
+    P(lx, legTop + 2 - lift, PAL.wood3, 2, 1);
+  });
+
+  // Body with a shaded right side and a belt.
+  const [bx0, bx1] = o.fat ? [2, 11] : [4, 9];
+  const bodyBottom = legTop - 1;
+  for (let y = 9; y <= bodyBottom; y++) {
+    for (let x = bx0; x <= bx1; x++) P(x, y, x >= bx1 - 1 ? o.body[1] : o.body[0]);
+  }
+  P(bx0, bodyBottom - 1, PAL.wood3, bx1 - bx0 + 1, 1);
+  if (!back) P(Math.floor((bx0 + bx1) / 2), bodyBottom - 1, PAL.gold);
+  // Arms.
+  P(bx0 - 1, 10, o.skin[0], 1, 2);
+  P(bx1 + 1, 10, o.skin[1], 1, 2);
+
+  // Big square head with rounded corners.
+  for (let y = 0; y <= 8; y++) {
+    for (let x = 2; x <= 11; x++) {
+      if ((y === 0 || y === 8) && (x === 2 || x === 11)) continue;
+      P(x, y, x === 11 || y === 8 ? o.skin[1] : o.skin[0]);
+    }
+  }
+  const hair = o.hair ?? PAL.hair;
+  if (back) {
+    for (let y = 0; y <= 6; y++) P(2 + (y === 0 ? 1 : 0), y, hair, y === 0 ? 8 : 10, 1);
+  } else {
+    P(3, 0, hair, 8, 1);
+    P(2, 1, hair, 10, 2);
+    P(2, 3, hair, 2, 3);
+    P(7, 4, PAL.outline, 1, 2);
+    P(10, 4, PAL.outline, 1, 2);
+    P(6, 6, PAL.blush); P(11, 6, PAL.blush);
+    P(9, 7, PAL.outline);
+  }
+  if (o.helmet) {
+    P(3, -1, PAL.metal1, 8, 1);
+    P(2, 0, PAL.metal1, 7, 3); P(9, 0, PAL.metal2, 3, 3);
+    P(2, 3, PAL.metal2, 2, back ? 4 : 3);
+    if (back) P(4, 3, PAL.metal2, 8, 4);
+    P(5, -3, PAL.red2, 4, 2); P(6, -4, PAL.red1, 2, 1);
+  }
+  if (o.hat) {
+    P(0, 0, PAL.wheat1, 14, 1);
+    P(3, -2, PAL.wheat2, 8, 2);
+    P(3, -1, PAL.red2, 8, 1);
+  }
+  if (o.crown) {
+    P(3, -2, PAL.gold, 8, 2);
+    P(3, -3, PAL.gold); P(6, -3, PAL.gold, 2, 1); P(10, -3, PAL.gold);
+    P(6, -2, PAL.red2, 2, 1);
+  }
+
+  // Held items.
+  if (o.item === 'fork') {
+    P(13, 0, PAL.wood2, 1, 16);
+    P(12, -3, PAL.metal2, 1, 3); P(14, -3, PAL.metal2, 1, 3); P(13, -3, PAL.metal2, 1, 3);
+    P(12, -1, PAL.metal2, 3, 1);
+  } else if (o.item === 'sword') {
+    P(13, 2, PAL.metal1, 1, 8); P(14, 3, PAL.metal2, 1, 7);
+    P(12, 10, PAL.gold, 4, 1); P(13, 11, PAL.wood3, 2, 2);
+  } else if (o.item === 'club') {
+    P(12, 1, PAL.wood1, 3, 6); P(14, 2, PAL.wood2, 1, 5); P(13, 7, PAL.wood2, 1, 6);
+    P(12, 2, PAL.metal2); P(13, 4, PAL.metal2);
+  }
+  if (o.shield) {
+    P(0, 9, PAL.red2, 4, 5); P(0, 14, PAL.red3, 4, 1); P(1, 11, PAL.gold, 2, 1); P(1, 10, PAL.gold, 1, 3);
+  }
+  return { canvas: outline(cv), fx: OX + 7, fy: OY + legTop + 3 };
+}
+
+const RAVEN_UP = [
+  '.k..........k...',
+  '.kKk......kKk...',
+  '..kKKk..kKKk....',
+  '...kKKkkKKkKK...',
+  '....kKKKKKKwKo..',
+  '.....kKKKKKKoo..',
+  '......kKKKKk....',
   '.......kk.......',
-  '......kppk......',
-  '....kkppppkk....',
-  '.kkkppppEepppkk.',
-  'kpppppppppppppk.',
-  'kppk.kpppppk.kpk',
-  'kpk...kk.kk...kk',
+];
+const RAVEN_DOWN = [
+  '................',
+  '..........KK....',
+  '.........KKwKo..',
+  '..kkkkkKKKKKoo..',
+  '.kKKKKKKKKKKk...',
+  'kKKkkKKKKKkKKk..',
+  'kKk..kKKKk..kKk.',
+  'kk....kk.....kk.',
 ];
 
-const KNIGHT = [
-  '.......kk.......',
-  '......krrk......',
-  '.....kkrrkk.....',
-  '....kssssssk....',
-  '...ksSsssssSk...',
-  '...ksSsssVVVk...',
-  '...ksSsssssSk...',
-  '....kkssssskk...',
-  '...kbbbbbbbbk...',
-  '..kbbbbybbbbbk..',
-  '..ksbbbbbbbbsk..',
-  '..kskbbbbbbksk..',
-  '...kkbbbbbbkk...',
-  '....ksSk.ksSk...',
-  '....kssk.kssk...',
-  '....kkkk.kkkk...',
-];
+function raven(back: boolean, frame: number): SpriteArt {
+  const [cv, ctx] = makeCanvas(18, 11);
+  const rows = frame === 0 ? RAVEN_UP : RAVEN_DOWN;
+  const colors = { k: PAL.raven2, K: PAL.raven1, w: back ? PAL.raven1 : PAL.white, o: back ? PAL.raven1 : PAL.beak };
+  drawRows(ctx, rows, colors, 1, 1);
+  return { canvas: outline(cv), fx: 9, fy: 9 };
+}
 
-const ENEMY_COLORS: Record<string, string> = {
-  k: PAL.ink, w: PAL.white, g: PAL.grass, l: PAL.grassLight, G: PAL.grassDark,
-  E: PAL.white, e: PAL.ink, p: PAL.purple, r: PAL.red, s: PAL.stone, S: PAL.stoneDark,
-  b: PAL.blue, y: PAL.yellow, V: PAL.ink,
+const CHIBIS: Record<Exclude<EnemyType, 'raven'>, Chibi> = {
+  peasant: { skin: [PAL.skin1, PAL.skin2], body: [PAL.red2, PAL.red3], legs: PAL.wood1, hat: true, item: 'fork' },
+  knight: { skin: [PAL.skin1, PAL.skin2], body: [PAL.red2, PAL.red3], legs: PAL.metal2, helmet: true, item: 'sword', shield: true },
+  ogre: { skin: [PAL.ogre1, PAL.ogre2], body: [PAL.wood1, PAL.wood2], legs: PAL.ogre2, fat: true, hair: PAL.ogre2, crown: true, item: 'club' },
 };
 
-function enemyArt(rows: string[], back: boolean, swap: Record<string, string> = {}, hide: Record<string, string> = {}): SpriteArt {
-  const w = rows[0].length;
-  const [cv, ctx] = makeCanvas(w, rows.length);
-  const colors = { ...ENEMY_COLORS, ...swap };
-  const src = back ? rows.map((r) => [...r].map((ch) => hide[ch] ?? ch).join('')) : rows;
-  drawRows(ctx, src, colors);
-  return { canvas: cv, fx: w / 2, fy: rows.length - 1 };
-}
-
+/** Keys look like `knight-front-0`. */
 export function enemyArts(): Record<string, SpriteArt> {
-  const slimeHide = { E: 'g', e: 'g' };
-  const bossSwap = { g: PAL.red, l: PAL.orange, G: PAL.purple };
-  const batHide = { E: 'p', e: 'p' };
-  const knightHide = { V: 's' };
-  return {
-    'slime-front': enemyArt(SLIME, false),
-    'slime-back': enemyArt(SLIME, true, {}, slimeHide),
-    'boss-front': enemyArt(SLIME, false, bossSwap),
-    'boss-back': enemyArt(SLIME, true, bossSwap, slimeHide),
-    'bat-front-0': enemyArt(BAT_UP, false),
-    'bat-front-1': enemyArt(BAT_DOWN, false),
-    'bat-back-0': enemyArt(BAT_UP, true, {}, batHide),
-    'bat-back-1': enemyArt(BAT_DOWN, true, {}, batHide),
-    'knight-front': enemyArt(KNIGHT, false),
-    'knight-back': enemyArt(KNIGHT, true, {}, knightHide),
-  };
+  const out: Record<string, SpriteArt> = {};
+  for (const side of ['front', 'back'] as const) {
+    for (const frame of [0, 1]) {
+      for (const [type, o] of Object.entries(CHIBIS)) out[`${type}-${side}-${frame}`] = chibi(o, side === 'back', frame);
+      out[`raven-${side}-${frame}`] = raven(side === 'back', frame);
+    }
+  }
+  return out;
 }
 
 // ---------- HUD icons ----------
 
 export function drawHeart(): HTMLCanvasElement {
-  const [cv, ctx] = makeCanvas(8, 7);
-  drawRows(ctx, ['.rr..rr.', 'rorrrrrr', 'rrrrrrrr', 'rrrrrrrr', '.rrrrrr.', '..rrrr..', '...rr...'], { r: PAL.red, o: PAL.orange });
-  return cv;
+  const [cv, ctx] = makeCanvas(10, 9);
+  drawRows(ctx, ['.rr..rr.', 'rwrrrrrr', 'rrrrrrrR', 'rrrrrrrR', '.rrrrrR.', '..rrRR..', '...RR...'], { r: PAL.red1, R: PAL.red2, w: PAL.white }, 1, 1);
+  return outline(cv);
 }
 
 export function drawCoin(): HTMLCanvasElement {
-  const [cv, ctx] = makeCanvas(8, 8);
-  drawRows(ctx, ['..kkkk..', '.kyyyyk.', 'kyywyyyk', 'kywyyyyk', 'kyyyyyyk', 'kyyyyyyk', '.kyyyyk.', '..kkkk..'], { k: PAL.woodDark, y: PAL.yellow, w: PAL.white });
-  return cv;
+  const [cv, ctx] = makeCanvas(10, 10);
+  drawRows(ctx, ['..yyyy..', '.yywyyy.', 'yywyyyYy', 'ywyyyyYy', 'yyyyyyYy', 'yyyyyYYy', '.yYYYYy.', '..yyyy..'], { y: PAL.gold, Y: PAL.goldDark, w: PAL.white }, 1, 1);
+  return outline(cv);
 }

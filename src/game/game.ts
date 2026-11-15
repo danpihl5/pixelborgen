@@ -293,7 +293,7 @@ export class Game {
         if (dx * dx + dy * dy > s.splash * s.splash) continue;
         if (s.slow > 0) {
           e.slowTime = SLOW_TIME;
-          e.slowFactor = e.type === 'boss' ? BOSS_SLOW_FACTOR : 1 - s.slow;
+          e.slowFactor = e.type === 'ogre' ? BOSS_SLOW_FACTOR : 1 - s.slow;
         }
         this.damage(e, s.dmg);
       }

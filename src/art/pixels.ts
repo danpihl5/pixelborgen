@@ -1,30 +1,33 @@
 // Tiny helpers for drawing pixel art onto canvases. Every texture in the game is made here
 // at start-up, so the art can later be swapped for hand-drawn PNGs without touching game code.
+//
+// Style: flat, faceted "low-poly" shading in warm medieval colours, and a thick dark cartoon
+// outline around every object.
 
 export const PAL = {
-  ink: '#1a1c2c',
-  white: '#f4f4f4',
-  grass: '#38b764',
-  grassDark: '#257179',
-  grassLight: '#a7f070',
-  blue: '#3b5dc9',
-  sky: '#41a6f6',
-  ice: '#73eff7',
-  red: '#b13e53',
-  orange: '#ef7d57',
-  yellow: '#ffcd75',
-  purple: '#5d275d',
-  stone: '#94b0c2',
-  stoneDark: '#566c86',
-  slate: '#333c57',
-  wood: '#a0703c',
-  woodDark: '#6b4426',
-  sand: '#c9a26b',
-  sandDark: '#a7804f',
-  sandLight: '#e3c58f',
-  dirt: '#7d5a34',
-  water: '#3b5dc9',
-  waterLight: '#41a6f6',
+  outline: '#2b1d1a',
+  white: '#fbf6ea',
+  // terrain
+  grass1: '#8bcf4c', grass2: '#7cc143', grass3: '#6db33d', grassDark: '#4f8f30', grassLight: '#b8e467',
+  dirt1: '#e0a96a', dirt2: '#d39b5d', dirt3: '#c68c52', dirtDark: '#9b6436', pebble: '#f1d3a1',
+  cliff: '#8f5a33', cliffDark: '#6b3f22', rock1: '#a99d8f', rock2: '#857a6d', rock3: '#635a51',
+  water1: '#4fc3e8', water2: '#3aa6d6', foam: '#e8fbff',
+  wheat1: '#f2c84b', wheat2: '#d9a93a', wheat3: '#b98a2c',
+  // buildings
+  stone1: '#efe6d6', stone2: '#d4c8b4', stone3: '#ab9e8a', mortar: '#8f8371',
+  wood1: '#b97a45', wood2: '#94592f', wood3: '#6e3f20',
+  roof1: '#e0683f', roof2: '#b84a2c',
+  gold: '#ffd23f', goldDark: '#d19a1f',
+  // teams
+  blue1: '#5b9cf0', blue2: '#3d7be0', blue3: '#2a56a8',
+  red1: '#f0585a', red2: '#d03b3f', red3: '#962a33',
+  // characters
+  skin1: '#f6c9a3', skin2: '#e0a37c', blush: '#f08a8a',
+  hair: '#7a4a2a', metal1: '#dfe6ee', metal2: '#a8b4c2', metal3: '#6f7c8c',
+  ogre1: '#9ccc52', ogre2: '#76a83c',
+  raven1: '#4b4a6b', raven2: '#2f2e48', beak: '#f5a524',
+  pink1: '#ff9ccf', pink2: '#e070a8',
+  ice: '#9ff4ff', magic: '#7ee0ff',
 } as const;
 
 export type Ctx = CanvasRenderingContext2D;
@@ -33,14 +36,14 @@ export function makeCanvas(w: number, h: number): [HTMLCanvasElement, Ctx] {
   const cv = document.createElement('canvas');
   cv.width = w;
   cv.height = h;
-  const ctx = cv.getContext('2d')!;
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
   ctx.imageSmoothingEnabled = false;
   return [cv, ctx];
 }
 
 export function px(ctx: Ctx, x: number, y: number, color: string, w = 1, h = 1): void {
   ctx.fillStyle = color;
-  ctx.fillRect(x, y, w, h);
+  ctx.fillRect(Math.round(x), Math.round(y), w, h);
 }
 
 /** Deterministic random numbers, so the map looks the same every time. */
@@ -51,8 +54,8 @@ export function rng(seed: number): () => number {
 }
 
 /**
- * Draws a pixel sprite from text rows. Each character is a palette key from `colors`;
- * '.' is transparent. Rows may be ragged; missing pixels are transparent.
+ * Draws a pixel sprite from text rows. Each character is a key in `colors`;
+ * characters without a colour (like '.') are transparent.
  */
 export function drawRows(ctx: Ctx, rows: string[], colors: Record<string, string>, ox = 0, oy = 0): void {
   rows.forEach((row, y) => {
@@ -63,11 +66,49 @@ export function drawRows(ctx: Ctx, rows: string[], colors: Record<string, string
   });
 }
 
-export function rowsSize(rows: string[]): { w: number; h: number } {
-  return { w: Math.max(...rows.map((r) => r.length)), h: rows.length };
+/** A crisp, un-antialiased triangle (canvas paths would blur the edges). */
+export function fillTri(ctx: Ctx, a: [number, number], b: [number, number], c: [number, number], color: string | ((x: number, y: number) => string)): void {
+  const minX = Math.floor(Math.min(a[0], b[0], c[0]));
+  const maxX = Math.ceil(Math.max(a[0], b[0], c[0]));
+  const minY = Math.floor(Math.min(a[1], b[1], c[1]));
+  const maxY = Math.ceil(Math.max(a[1], b[1], c[1]));
+  const edge = (p: [number, number], q: [number, number], x: number, y: number) => (q[0] - p[0]) * (y - p[1]) - (q[1] - p[1]) * (x - p[0]);
+  const area = edge(a, b, c[0], c[1]);
+  if (area === 0) return;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const cx = x + 0.5, cy = y + 0.5;
+      const w0 = edge(b, c, cx, cy) / area, w1 = edge(c, a, cx, cy) / area, w2 = edge(a, b, cx, cy) / area;
+      if (w0 >= -0.001 && w1 >= -0.001 && w2 >= -0.001) px(ctx, x, y, typeof color === 'string' ? color : color(x, y));
+    }
+  }
 }
 
-/** Pixels covered by a 2:1 isometric diamond `w` wide, with its top-left box at (ox, oy). */
+/** A one-pixel line. */
+export function line(ctx: Ctx, x0: number, y0: number, x1: number, y1: number, color: string, thick = 1): void {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= n; i++) {
+    px(ctx, x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, color, thick, thick);
+  }
+}
+
+/** Adds the cartoon outline: every empty pixel touching a filled one becomes `color`. */
+export function outline(cv: HTMLCanvasElement, color: string = PAL.outline): HTMLCanvasElement {
+  const ctx = cv.getContext('2d', { willReadFrequently: true })!;
+  const { width: w, height: h } = cv;
+  const img = ctx.getImageData(0, 0, w, h);
+  const solid = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && img.data[(y * w + x) * 4 + 3] > 0;
+  const marks: [number, number][] = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) marks.push([x, y]);
+    }
+  }
+  for (const [x, y] of marks) px(ctx, x, y, color);
+  return cv;
+}
+
+/** Pixels covered by a 2:1 isometric diamond `w` wide. */
 export function diamondRows(w: number): { y: number; x0: number; x1: number }[] {
   const h = w / 2;
   const out: { y: number; x0: number; x1: number }[] = [];
@@ -78,28 +119,43 @@ export function diamondRows(w: number): { y: number; x0: number; x1: number }[] 
   return out;
 }
 
+type Paint = string | ((x: number, k: number) => string);
+
 /**
- * An isometric block: a diamond top `w` pixels wide plus left and right faces `depth` pixels tall.
- * Returns the bottom edge of the top face per column, for callers that add their own detail.
+ * An isometric block: a diamond top `w` pixels wide with its box at (ox, oy), plus left and
+ * right faces `depth` pixels tall. Face paints get the column and the row counted down from
+ * the face's top edge, which follows the slope, so brick rows line up with the block.
  */
 export function isoBlock(
   ctx: Ctx, ox: number, oy: number, w: number, depth: number,
-  top: (x: number, y: number) => string, left: string, right: string, edge?: string,
+  top: (x: number, y: number) => string, left: Paint, right: Paint,
 ): number[] {
-  const rows = diamondRows(w);
   const bottom: number[] = new Array(w).fill(-1);
-  for (const { y, x0, x1 } of rows) {
+  for (const { y, x0, x1 } of diamondRows(w)) {
     for (let x = x0; x <= x1; x++) {
       px(ctx, ox + x, oy + y, top(x, y));
       bottom[x] = Math.max(bottom[x], y);
     }
   }
   for (let x = 0; x < w; x++) {
-    const color = x < w / 2 ? left : right;
-    px(ctx, ox + x, oy + bottom[x] + 1, color, 1, depth);
-  }
-  if (edge) {
-    for (let x = 0; x < w; x++) px(ctx, ox + x, oy + bottom[x] + depth, edge);
+    const paint = x < w / 2 ? left : right;
+    for (let k = 0; k < depth; k++) {
+      px(ctx, ox + x, oy + bottom[x] + 1 + k, typeof paint === 'string' ? paint : paint(x, k));
+    }
   }
   return bottom;
+}
+
+/** Stone-brick face paint: rows of bricks with staggered joints. */
+export function bricks(face: string, mortar: string, rowH = 4, brickW = 6): (x: number, k: number) => string {
+  return (x, k) => {
+    if (k % rowH === rowH - 1) return mortar;
+    const offset = Math.floor(k / rowH) % 2 ? brickW / 2 : 0;
+    return (x + offset) % brickW === 0 ? mortar : face;
+  };
+}
+
+/** Wooden plank face paint. */
+export function planks(face: string, seam: string, plankW = 4): (x: number, k: number) => string {
+  return (x) => (x % plankW === 0 ? seam : face);
 }
