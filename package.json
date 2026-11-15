@@ -1,0 +1,35 @@
+{
+  "name": "pixelborgen",
+  "version": "0.1.0",
+  "description": "Isometrisk tower-defence-spil i pixel-art til mobilen",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build:single": "tsc --noEmit && node scripts/build-single.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danpihl5/pixelborgen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/danpihl5/pixelborgen/issues"
+  },
+  "homepage": "https://github.com/danpihl5/pixelborgen#readme",
+  "dependencies": {
+    "@capacitor/core": "^7.6.10",
+    "@fontsource/press-start-2p": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  },
+  "private": true,
+  "type": "module"
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1c2c" />
+    <title>Pixelborgen</title>
+  </head>
+  <body>
+    <div class="app">
+      <div class="hud">
+        <span class="stat"><span class="icon heart" aria-hidden="true"></span><span id="lives">20</span></span>
+        <span class="stat gold"><span class="icon coin" aria-hidden="true"></span><span id="gold">0</span></span>
+        <span class="stat">BØLGE <span id="wave">0</span></span>
+        <span class="spacer"></span>
+        <button class="btn small" id="soundBtn" type="button" aria-label="Lyd til eller fra">LYD</button>
+        <button class="btn small" id="pauseBtn" type="button" aria-label="Pause">II</button>
+      </div>
+
+      <div class="board" id="board">
+        <div id="game"></div>
+        <div class="toast" id="toast"></div>
+        <div class="overlay" id="startOv">
+          <div class="card">
+            <h1>PIXEL<br />BORGEN</h1>
+            <p>Monstrene vil ind i borgen. Byg tårne langs vejen og stop dem.</p>
+            <p class="small">Træk for at flytte kortet. Knib for at zoome.</p>
+            <p class="best" id="bestStart"></p>
+            <button class="btn go" id="playBtn" type="button">SPIL</button>
+          </div>
+        </div>
+        <div class="overlay" id="overOv" hidden>
+          <div class="card">
+            <h2>BORGEN<br />ER FALDET</h2>
+            <p id="overText"></p>
+            <p class="best" id="bestOver"></p>
+            <button class="btn go" id="againBtn" type="button">PRØV IGEN</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tray">
+        <div class="ctx" id="ctx"></div>
+        <div class="actions">
+          <button class="btn go big" id="waveBtn" type="button">START BØLGE 1</button>
+          <button class="btn" id="speedBtn" type="button" aria-label="Spilhastighed">1X</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
