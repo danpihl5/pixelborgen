@@ -2,7 +2,9 @@
 
 Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg din by omkring slottet, og forsvar den mod den røde hær.
 
-Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter og derefter bygge ølstue, farmerhus, troldmandshus og smedje (1 × 1 felt hver).
+Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter og derefter bygge troldmandshus og smedje (1 × 1 felt hver).
+
+Bygningerne er pixel-art-billeder, og terræn, træer og sten er tegnet i kode i samme stil: varmt gulgrønt græs med græstotter, jordkanter, buskede træer og blege sten.
 
 **Bemærk:** Bygningernes grafik i `src/assets/` er klippet ud af andres billeder (bl.a. et stockfoto med vandmærke) og er kun midlertidige pladsholdere. Billederne skal købes med licens, bruges med kunstnerens tilladelse eller erstattes af egen grafik, før spillet udgives.
 
