@@ -68,7 +68,7 @@ export class WorldScene extends Phaser.Scene {
     });
     // A faint tile grid, shown only while the player is placing a building.
     this.gridGfx = this.add.graphics().setDepth(GRID_LAYER).setVisible(false);
-    this.gridGfx.lineStyle(1, hex(PAL.white), 0.14);
+    this.gridGfx.lineStyle(1, hex(PAL.white), 0.22);
     for (let i = 0; i <= size; i++) {
       const a = toScreen(i, 0), b = toScreen(i, size), c = toScreen(0, i), d = toScreen(size, i);
       this.gridGfx.lineBetween(a.x, a.y, b.x, b.y).lineBetween(c.x, c.y, d.x, d.y);
