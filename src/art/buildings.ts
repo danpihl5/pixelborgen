@@ -6,10 +6,6 @@ import castleMeta from '../assets/castle.json';
 import castleUrl from '../assets/castle.png';
 import smithyMeta from '../assets/smithy.json';
 import smithyUrl from '../assets/smithy.png';
-import farmMeta from '../assets/farm.json';
-import farmUrl from '../assets/farm.png';
-import tavernMeta from '../assets/tavern.json';
-import tavernUrl from '../assets/tavern.png';
 import wizardMeta from '../assets/wizard.json';
 import wizardUrl from '../assets/wizard.png';
 import type { BuildingType } from '../game/city';
@@ -21,8 +17,6 @@ interface Meta { fx: number; fy: number; baseWidth: number; tiles: number }
 
 const SOURCES: Record<BuildingType, { url: string; meta: Meta }> = {
   castle: { url: castleUrl, meta: castleMeta },
-  tavern: { url: tavernUrl, meta: tavernMeta },
-  farm: { url: farmUrl, meta: farmMeta },
   wizard: { url: wizardUrl, meta: wizardMeta },
   smithy: { url: smithyUrl, meta: smithyMeta },
 };

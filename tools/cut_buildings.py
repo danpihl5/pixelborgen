@@ -2,7 +2,7 @@
 
 Usage: python3 tools/cut_buildings.py <reference-dir> <out-dir> [preview-dir]
 
-The reference directory holds castle.webp, tavern.jpg, farm.jpg, wizard.webp and smithy.webp (the pictures
+The reference directory holds castle.webp, wizard.webp and smithy.webp (the pictures
 are not kept in the repository). For each one this writes <name>.png, stored at twice the
 size it is shown in the game, and <name>.json with the foot point (the spot that stands on
 the centre of the building's footprint) and the width in pixels that spans the footprint.
@@ -46,46 +46,6 @@ def castle(im):
     return mask, (470, 1285), 920, 2
 
 
-def tavern(im):
-    # Traced on a 1.3x enlargement of the picture cropped at (80, 60).
-    traced = [
-        (55, 650), (50, 478), (150, 425), (295, 370), (250, 340), (255, 310), (400, 215),
-        (400, 100), (398, 65), (455, 48), (498, 68), (495, 100), (492, 185),
-        (540, 162), (545, 95), (540, 62), (595, 38), (648, 58), (645, 95), (643, 122),
-        (700, 100), (915, 30), (932, 45), (930, 75), (945, 100), (1065, 265), (1068, 290), (1032, 322),
-        (1032, 405), (1042, 432), (1135, 520), (1130, 548), (1118, 562), (1118, 700), (1095, 706),
-        (1088, 692), (1040, 706), (990, 732), (970, 746), (900, 792), (850, 802), (760, 872),
-        (745, 882), (720, 886), (700, 880), (690, 866), (640, 872), (600, 862), (590, 872),
-        (555, 882), (522, 862), (500, 852), (460, 852), (335, 792), (335, 772), (345, 762),
-        (300, 766), (275, 742), (270, 722), (95, 642),
-    ]
-    outline = [(80 + x / 1.3, 60 + y / 1.3) for x, y in traced]
-    foot = (80 + 590 / 1.3, 60 + 690 / 1.3)
-    return polygon_mask(im.size, [outline]), foot, 1063 / 1.3, 1
-
-
-def farm(im):
-    # The plot stands on white; drop the white and the people, animals and cart outside the plot.
-    mask = flood_mask(im, [(40, 40), (560, 40), (40, 360), (560, 360)], 40)
-    left, bottom, right = (30, 240), (350, 352), (578, 236)
-    mp = mask.load()
-    for x in range(im.width):
-        if x <= bottom[0]:
-            edge = left[1] + (x - left[0]) * (bottom[1] - left[1]) / (bottom[0] - left[0])
-        else:
-            edge = bottom[1] + (x - bottom[0]) * (right[1] - bottom[1]) / (right[0] - bottom[0])
-        for y in range(im.height):
-            if y > edge + 4 or x < 28 or x > 573 or y < 6:
-                mp[x, y] = 0
-    # Pockets of white enclosed by the trees.
-    px = im.load()
-    for y in range(im.height):
-        for x in range(im.width):
-            if min(px[x, y]) > 243:
-                mp[x, y] = 0
-    return mask, (304, 245), right[0] - left[0], 1
-
-
 def wizard(im):
     mask = flood_mask(im, [(5, 5), (im.width - 5, 5), (5, im.height - 5), (im.width - 5, im.height - 5)], 16)
     return mask, (610, 940), 960, 1
@@ -96,7 +56,7 @@ def smithy(im):
     return mask, (636, 880), 1170, 1
 
 
-BUILDINGS = {'castle': ('castle.webp', castle), 'tavern': ('tavern.jpg', tavern), 'farm': ('farm.jpg', farm), 'wizard': ('wizard.webp', wizard), 'smithy': ('smithy.webp', smithy)}
+BUILDINGS = {'castle': ('castle.webp', castle), 'wizard': ('wizard.webp', wizard), 'smithy': ('smithy.webp', smithy)}
 
 for name, (file, fn) in BUILDINGS.items():
     im = Image.open(f'{REF}/{file}').convert('RGB')

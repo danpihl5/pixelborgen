@@ -57,7 +57,8 @@ export class WorldScene extends Phaser.Scene {
 
     // Trees and rocks, with a little jitter so the woods don't look planted in rows.
     this.session.city.props.forEach((prop, i) => {
-      const key = prop.kind === 'tree' ? `tree${(prop.c * 7 + prop.r * 3) % 4}` : `rock${i % 3 === 0 ? 1 : 0}`;
+      // Woods are mostly trees with a bush here and there.
+      const key = prop.kind === 'tree' ? `tree${[0, 1, 0, 2, 1, 3, 0][(prop.c * 7 + prop.r * 3) % 7]}` : `rock${i % 3 === 0 ? 1 : 0}`;
       const a = this.art.get(key)!;
       const jx = ((prop.c * 13 + prop.r * 7) % 9) - 4;
       const jy = ((prop.c * 5 + prop.r * 11) % 5) - 2;

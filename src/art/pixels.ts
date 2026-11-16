@@ -28,12 +28,16 @@ export const PAL = {
   raven1: '#4b4a6b', raven2: '#2f2e48', beak: '#f5a524',
   pink1: '#ff9ccf', pink2: '#e070a8',
   ice: '#9ff4ff', magic: '#7ee0ff',
-  // Classic isometric pixel-art look (see the owner's reference picture):
-  // saturated flat grass, layered earth cliffs, mauve-grey castle stone, bright red roofs.
-  turf1: '#6cbf3c', turf2: '#64b438', turfHi: '#93d553', turfLo: '#4f9a32', turfTuft: '#3d7f2a',
-  earth1: '#a8743f', earth2: '#87582f', earth3: '#5e3b20',
-  leaf1: '#8fd14f', leaf2: '#5aa83f', leaf3: '#3e8a35', leaf4: '#2a6a2c',
-  boulder1: '#d2d2d8', boulder2: '#a3a3ae', boulder3: '#767684',
+  // Terrain, sampled from the owner's building pictures: warm yellow-green grass in soft
+  // mottled patches, tile blocks with brown soil sides and grass hanging over the edge,
+  // lumpy yellow-green bushes and pale pebbles, all outlined in a dark blue-grey.
+  ink: '#1e2c33',
+  turf1: '#9cc13b', turf2: '#8fb636', turfHi: '#b9d443', turfPatch: '#83aa34', turfLo: '#6f9a34', turfTuft: '#4e7a32', turfSeam: '#86ad36',
+  earth1: '#b0703f', earth2: '#8a5236', earth3: '#5a3127', earthSeam: '#3b2626',
+  leaf1: '#dbe138', leaf2: '#a6c832', leaf3: '#72a033', leaf4: '#3f6b33', leaf5: '#2a4d38',
+  bark1: '#8a6a4a', bark2: '#5e4532',
+  boulder1: '#d3c9b4', boulder2: '#aca290', boulder3: '#7d7365', boulderHi: '#e9e2d0',
+  bloom: '#f1e963',
   keep1: '#bcaeb9', keep2: '#9a8a9e', keep3: '#77687e', keepMortar: '#574a5f',
   tileHi: '#f58a5c', tile1: '#e5533f', tile2: '#bb3530', tile3: '#86232a',
   moat1: '#3d8fe0', moat2: '#5fb0f0', moatHi: '#c4e9ff', cobble1: '#a2a2ac', cobble2: '#7c7c88', cobble3: '#5c5c68',

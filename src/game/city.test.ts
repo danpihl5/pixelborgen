@@ -38,19 +38,18 @@ describe('city', () => {
 
   it('builds other buildings only after the castle, and not on top of each other', () => {
     const city = new City(30, []);
-    expect(city.canPlace('tavern', 5, 5)).toBe(false);
+    expect(city.canPlace('wizard', 5, 5)).toBe(false);
     city.place('castle', 10, 10);
-    expect(city.place('tavern', 5, 5)).not.toBeNull();
-    expect(city.place('wizard', 5, 5)).toBeNull();
-    expect(city.place('wizard', 10, 11)).toBeNull(); // the castle is in the way
-    const farm = city.place('farm', 6, 5);
-    expect(farm).not.toBeNull();
-    expect(city.buildingAt(6, 5)).toBe(farm);
+    expect(city.place('wizard', 5, 5)).not.toBeNull();
+    expect(city.place('smithy', 5, 5)).toBeNull();
+    expect(city.place('smithy', 10, 11)).toBeNull(); // the castle is in the way
+    const smithy = city.place('smithy', 6, 5);
+    expect(smithy).not.toBeNull();
+    expect(city.buildingAt(6, 5)).toBe(smithy);
     expect(city.buildingAt(7, 5)).toBeUndefined();
-    expect(city.canPlace('farm', 29, 29)).toBe(true);
-    expect(city.canPlace('farm', 30, 29)).toBe(false);
-    expect(city.place('smithy', 6, 6)).not.toBeNull();
-    expect(city.buildings).toHaveLength(4);
+    expect(city.canPlace('smithy', 29, 29)).toBe(true);
+    expect(city.canPlace('smithy', 30, 29)).toBe(false);
+    expect(city.buildings).toHaveLength(3);
   });
 
   it('does not build on trees or rocks', () => {
