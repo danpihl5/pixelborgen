@@ -4,6 +4,8 @@
 
 import castleMeta from '../assets/castle.json';
 import castleUrl from '../assets/castle.png';
+import smithyMeta from '../assets/smithy.json';
+import smithyUrl from '../assets/smithy.png';
 import farmMeta from '../assets/farm.json';
 import farmUrl from '../assets/farm.png';
 import tavernMeta from '../assets/tavern.json';
@@ -22,6 +24,7 @@ const SOURCES: Record<BuildingType, { url: string; meta: Meta }> = {
   tavern: { url: tavernUrl, meta: tavernMeta },
   farm: { url: farmUrl, meta: farmMeta },
   wizard: { url: wizardUrl, meta: wizardMeta },
+  smithy: { url: smithyUrl, meta: smithyMeta },
 };
 
 /** Picture URLs, for the build menu. */

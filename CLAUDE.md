@@ -1,6 +1,6 @@
 # Pixelborgen
 
-Isometric pixel-art city builder with tower-defence elements, for phones. Early stage: a 30 × 30 grass map where the player places a 2 × 2 castle and can then build an Ølstue (tavern), a Farmerhus (farm) and a Troldmandshus (wizard), each 1 × 1 with its picture scaled to fit the tile. Phaser 3 + TypeScript + Vite, wrapped as an app with Capacitor. The owner speaks Danish: all player-facing text and the README are in Danish; code and comments are in English.
+Isometric pixel-art city builder with tower-defence elements, for phones. Early stage: a 30 × 30 grass map where the player places a 2 × 2 castle and can then build an Ølstue (tavern), a Farmerhus (farm), a Troldmandshus (wizard) and a Smedje (smithy), each 1 × 1 with its picture scaled to fit the tile. Phaser 3 + TypeScript + Vite, wrapped as an app with Capacitor. The owner speaks Danish: all player-facing text and the README are in Danish; code and comments are in English.
 
 ## Commands
 

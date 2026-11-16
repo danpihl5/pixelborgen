@@ -5,7 +5,7 @@ import { generateScenery, type Prop } from './scenery';
 
 export const MAP_SIZE = 30;
 
-export type BuildingType = 'castle' | 'tavern' | 'farm' | 'wizard';
+export type BuildingType = 'castle' | 'tavern' | 'farm' | 'wizard' | 'smithy';
 
 export interface BuildingDef {
   name: string;
@@ -19,10 +19,11 @@ export const BUILDINGS: Record<BuildingType, BuildingDef> = {
   tavern: { name: 'Ølstue', w: 1, h: 1 },
   farm: { name: 'Farmerhus', w: 1, h: 1 },
   wizard: { name: 'Troldmandshus', w: 1, h: 1 },
+  smithy: { name: 'Smedje', w: 1, h: 1 },
 };
 
 /** Buildings the player can put up once the castle stands. */
-export const BUILDABLE: BuildingType[] = ['tavern', 'farm', 'wizard'];
+export const BUILDABLE: BuildingType[] = ['tavern', 'farm', 'wizard', 'smithy'];
 
 export interface Building {
   id: number;

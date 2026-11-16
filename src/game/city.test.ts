@@ -49,7 +49,8 @@ describe('city', () => {
     expect(city.buildingAt(7, 5)).toBeUndefined();
     expect(city.canPlace('farm', 29, 29)).toBe(true);
     expect(city.canPlace('farm', 30, 29)).toBe(false);
-    expect(city.buildings).toHaveLength(3);
+    expect(city.place('smithy', 6, 6)).not.toBeNull();
+    expect(city.buildings).toHaveLength(4);
   });
 
   it('does not build on trees or rocks', () => {

@@ -2,7 +2,7 @@
 
 Usage: python3 tools/cut_buildings.py <reference-dir> <out-dir> [preview-dir]
 
-The reference directory holds castle.webp, tavern.jpg, farm.jpg and wizard.webp (the pictures
+The reference directory holds castle.webp, tavern.jpg, farm.jpg, wizard.webp and smithy.webp (the pictures
 are not kept in the repository). For each one this writes <name>.png, stored at twice the
 size it is shown in the game, and <name>.json with the foot point (the spot that stands on
 the centre of the building's footprint) and the width in pixels that spans the footprint.
@@ -91,7 +91,12 @@ def wizard(im):
     return mask, (610, 940), 960, 1
 
 
-BUILDINGS = {'castle': ('castle.webp', castle), 'tavern': ('tavern.jpg', tavern), 'farm': ('farm.jpg', farm), 'wizard': ('wizard.webp', wizard)}
+def smithy(im):
+    mask = flood_mask(im, [(5, 5), (im.width - 5, 5), (5, im.height - 5), (im.width - 5, im.height - 5)], 16)
+    return mask, (636, 880), 1170, 1
+
+
+BUILDINGS = {'castle': ('castle.webp', castle), 'tavern': ('tavern.jpg', tavern), 'farm': ('farm.jpg', farm), 'wizard': ('wizard.webp', wizard), 'smithy': ('smithy.webp', smithy)}
 
 for name, (file, fn) in BUILDINGS.items():
     im = Image.open(f'{REF}/{file}').convert('RGB')
