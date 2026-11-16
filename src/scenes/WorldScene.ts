@@ -6,7 +6,7 @@ import { play } from '../audio';
 import { BUILDINGS, type Building, type BuildingType } from '../game/city';
 import { depthOf, toGrid, toScreen } from '../iso';
 import { PAL } from '../art/pixels';
-import { drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures';
+import { drawGround, drawRock, drawTree, TREE_VARIANTS, type SpriteArt } from '../art/textures';
 import type { Session } from '../session';
 
 const GROUND_LAYER = -100000;
@@ -21,6 +21,13 @@ const START_ZOOM = 1;
 interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; color: number }
 
 const hex = (c: string) => parseInt(c.slice(1), 16);
+
+/** Tree variant for a tile: mostly round trees and bushes, the special kinds now and then. */
+const TREE_MIX = [0, 1, 2, 0, 1, 3, 4, 0, 10, 2, 5, 1, 6, 0, 8, 4, 3, 7, 1, 11, 0, 9, 2, 10, 4];
+function pickTree(c: number, r: number): number {
+  const h = Math.abs(Math.sin(c * 12.9898 + r * 78.233) * 43758.5453);
+  return TREE_MIX[Math.floor((h - Math.floor(h)) * TREE_MIX.length)];
+}
 
 export class WorldScene extends Phaser.Scene {
   private session: Session;
@@ -50,7 +57,7 @@ export class WorldScene extends Phaser.Scene {
     const ground = drawGround(size);
     this.textures.addCanvas('ground', ground.canvas);
     for (const [type, a] of Object.entries(this.buildingArt)) this.register(type, a);
-    for (let i = 0; i < 4; i++) this.register(`tree${i}`, drawTree(i));
+    for (let i = 0; i < TREE_VARIANTS; i++) this.register(`tree${i}`, drawTree(i));
     for (let i = 0; i < 2; i++) this.register(`rock${i}`, drawRock(i));
 
     this.add.image(-ground.ox, ground.oy, 'ground').setOrigin(0, 0).setDepth(GROUND_LAYER);
@@ -58,7 +65,7 @@ export class WorldScene extends Phaser.Scene {
     // Trees and rocks, with a little jitter so the woods don't look planted in rows.
     this.session.city.props.forEach((prop, i) => {
       // Woods are mostly trees with a bush here and there.
-      const key = prop.kind === 'tree' ? `tree${[0, 1, 0, 2, 1, 3, 0][(prop.c * 7 + prop.r * 3) % 7]}` : `rock${i % 3 === 0 ? 1 : 0}`;
+      const key = prop.kind === 'tree' ? `tree${pickTree(prop.c, prop.r)}` : `rock${i % 3 === 0 ? 1 : 0}`;
       const a = this.art.get(key)!;
       const jx = ((prop.c * 13 + prop.r * 7) % 9) - 4;
       const jy = ((prop.c * 5 + prop.r * 11) % 5) - 2;

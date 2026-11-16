@@ -196,11 +196,19 @@ function circleBlob(ctx: Ctx, circles: [number, number, number][], shade: (x: nu
 
 // ---------- Scenery ----------
 
+/** Five tones for foliage, from the lit highlight to the darkest rim. */
+type Leaves = [string, string, string, string, string];
+
+const GREEN: Leaves = [PAL.leaf1, PAL.leaf2, PAL.leaf3, PAL.leaf4, PAL.leaf5];
+const DEEP: Leaves = ['#9cc83a', '#6fa232', '#4c8134', '#335f33', '#22432f'];
+const AUTUMN: Leaves = ['#f6d24a', '#e9a13b', '#c96d2f', '#93472a', '#5e2f25'];
+const GOLDEN: Leaves = ['#f3e65a', '#d9cf3a', '#b0ab32', '#7d8231', '#4f5a2d'];
+
 /**
- * A lumpy, cauliflower-like crown of round bumps, each shaded on its own: bright yellow-green
- * on the lit top-left, deep green in the shade. Bumps are drawn back to front.
+ * A lumpy, cauliflower-like crown of round bumps, each shaded on its own: the highlight on
+ * the lit top-left, the dark tones in the shade. Bumps are drawn back to front.
  */
-function crown(ctx: Ctx, bumps: [number, number, number][], rand: () => number): void {
+function crown(ctx: Ctx, bumps: [number, number, number][], rand: () => number, leaves: Leaves = GREEN): void {
   const sorted = [...bumps].sort((a, b) => a[1] - b[1]);
   const top = Math.min(...bumps.map((b) => b[1] - b[2]));
   const bottom = Math.max(...bumps.map((b) => b[1] + b[2]));
@@ -214,37 +222,114 @@ function crown(ctx: Ctx, bumps: [number, number, number][], rand: () => number):
         const depth = (y - top) / Math.max(1, bottom - top);
         const light = (-dx - dy * 1.2) / r * 0.8 + 0.5 - depth * 1.3 + (rand() - 0.5) * 0.3;
         let c: string;
-        if (d > 0.82 && dx + dy > 0) c = depth > 0.6 ? PAL.leaf5 : PAL.leaf4;
-        else if (light > 0.75) c = PAL.leaf1;
-        else if (light > 0.15) c = PAL.leaf2;
-        else if (light > -0.5) c = PAL.leaf3;
-        else c = PAL.leaf4;
+        if (d > 0.82 && dx + dy > 0) c = depth > 0.6 ? leaves[4] : leaves[3];
+        else if (light > 0.75) c = leaves[0];
+        else if (light > 0.15) c = leaves[1];
+        else if (light > -0.5) c = leaves[2];
+        else c = leaves[3];
         px(ctx, x, y, c);
       }
     }
   }
 }
 
-/** A bushy tree (variants 0, 1) or a low bush (variants 2, 3), as in the owner's pictures. */
-export function drawTree(variant: number): SpriteArt {
-  const [cv, ctx] = makeCanvas(60, 70);
-  const rand = rng(401 + variant * 71);
-  const cx = 30, base = 64;
-  const bush = variant >= 2;
-  if (!bush) {
-    px(ctx, cx - 3, base - 14, PAL.bark1, 4, 14);
-    px(ctx, cx + 1, base - 14, PAL.bark2, 2, 14);
-    px(ctx, cx - 5, base - 2, PAL.bark2, 2, 2); px(ctx, cx + 3, base - 2, PAL.bark2, 2, 2);
+/** A trunk `h` pixels tall standing on (x, base), lit on the left. */
+function trunk(ctx: Ctx, x: number, base: number, h: number, w = 6, lean = 0): void {
+  for (let k = 0; k < h; k++) {
+    const xx = Math.round(x + (lean * k) / h);
+    px(ctx, xx - w / 2, base - k, PAL.bark1, w - 2, 1);
+    px(ctx, xx + w / 2 - 2, base - k, PAL.bark2, 2, 1);
   }
-  const bumps: [number, number, number][] = [];
-  const s = bush ? 0.72 : [1, 0.9][variant];
-  const mid = bush ? base - 12 : base - 34 * s;
-  // Many small bumps over a rounded mass, denser and bigger towards the middle.
-  for (let i = 0; i < (bush ? 14 : 26); i++) {
+  px(ctx, x - w / 2 - 2, base, PAL.bark2, 2, 1); px(ctx, x + w / 2, base, PAL.bark2, 2, 1);
+}
+
+/** Random bumps filling an ellipse centred at (cx, cy). */
+function blob(rand: () => number, cx: number, cy: number, rx: number, ry: number, n: number, r0: number): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  for (let i = 0; i < n; i++) {
     const a = rand() * Math.PI * 2, rr = Math.sqrt(rand());
-    bumps.push([cx + Math.cos(a) * 17 * s * rr, mid + Math.sin(a) * 14 * s * rr, (5 + rand() * 3 + (1 - rr) * 3) * s]);
+    out.push([cx + Math.cos(a) * rx * rr, cy + Math.sin(a) * ry * rr, r0 + rand() * 3 + (1 - rr) * 3]);
   }
-  crown(ctx, bumps, rand);
+  return out;
+}
+
+/** Little dots of fruit or blossom scattered over a crown. */
+function dots(ctx: Ctx, rand: () => number, cx: number, cy: number, rx: number, ry: number, n: number, c1: string, c2: string): void {
+  for (let i = 0; i < n; i++) {
+    const a = rand() * Math.PI * 2, rr = Math.sqrt(rand()) * 0.85;
+    const x = Math.round(cx + Math.cos(a) * rx * rr), y = Math.round(cy + Math.sin(a) * ry * rr);
+    px(ctx, x, y, c1, 2, 2); px(ctx, x + 1, y + 1, c2);
+  }
+}
+
+/** How many tree and bush variants `drawTree` knows. */
+export const TREE_VARIANTS = 12;
+
+/**
+ * Trees and bushes in the style of the owner's pictures. Variants:
+ * 0–1 round leafy trees, 2–3 low bushes, 4 pine, 5 slim poplar, 6 apple tree,
+ * 7 autumn tree, 8 broad twin-trunk oak, 9 blossom tree, 10 young tree, 11 flowering bush.
+ */
+export function drawTree(variant: number): SpriteArt {
+  const [cv, ctx] = makeCanvas(72, 92);
+  const rand = rng(401 + variant * 71);
+  const cx = 36, base = 86;
+  switch (variant) {
+    case 0: case 1: {
+      const s = variant === 0 ? 1 : 0.9;
+      trunk(ctx, cx, base, 14);
+      crown(ctx, blob(rand, cx, base - 34 * s, 17 * s, 14 * s, 26, 5 * s), rand);
+      break;
+    }
+    case 2: case 3:
+      crown(ctx, blob(rand, cx, base - 12, 12, 10, 14, 3.6), rand, variant === 3 ? DEEP : GREEN);
+      break;
+    case 4: {
+      // Pine: tiers of bumps narrowing towards the top.
+      trunk(ctx, cx, base, 10, 4);
+      for (let t = 0; t < 5; t++) {
+        const y = base - 14 - t * 11, wTier = 16 - t * 3;
+        const tier: [number, number, number][] = [];
+        for (let i = 0; i < 6; i++) tier.push([cx + (i / 5 - 0.5) * 2 * wTier, y - Math.abs(i / 5 - 0.5) * 4, 5 - t * 0.5 + rand()]);
+        crown(ctx, tier, rand, DEEP);
+      }
+      crown(ctx, [[cx, base - 72, 3.5]], rand, DEEP);
+      break;
+    }
+    case 5:
+      // Slim poplar.
+      trunk(ctx, cx, base, 8, 4);
+      crown(ctx, blob(rand, cx, base - 38, 8, 28, 24, 3.8), rand, DEEP);
+      break;
+    case 6:
+      trunk(ctx, cx, base, 14);
+      crown(ctx, blob(rand, cx, base - 33, 18, 13, 26, 5), rand);
+      dots(ctx, rand, cx, base - 33, 18, 13, 9, '#d8402f', '#8e2526');
+      break;
+    case 7:
+      trunk(ctx, cx, base, 16, 6, 2);
+      crown(ctx, blob(rand, cx + 2, base - 36, 16, 14, 24, 5), rand, AUTUMN);
+      break;
+    case 8:
+      // Broad oak on two trunks.
+      trunk(ctx, cx - 7, base, 16, 6, -3);
+      trunk(ctx, cx + 7, base, 14, 6, 3);
+      crown(ctx, blob(rand, cx, base - 34, 25, 14, 34, 5), rand, GOLDEN);
+      break;
+    case 9:
+      trunk(ctx, cx, base, 14, 5, -2);
+      crown(ctx, blob(rand, cx - 1, base - 33, 16, 13, 24, 5), rand);
+      dots(ctx, rand, cx - 1, base - 33, 16, 13, 18, '#f7b5cf', '#e07aa6');
+      break;
+    case 10:
+      // Young tree: thin trunk, small crown.
+      trunk(ctx, cx, base, 16, 4);
+      crown(ctx, blob(rand, cx, base - 27, 10, 8, 14, 4), rand);
+      break;
+    default:
+      crown(ctx, blob(rand, cx, base - 11, 13, 9, 16, 3.6), rand);
+      dots(ctx, rand, cx, base - 11, 13, 9, 7, PAL.bloom, '#c7a52f');
+  }
   return { canvas: outline(cv, PAL.ink), fx: cx, fy: base - 3 };
 }
 
