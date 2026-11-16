@@ -1,6 +1,8 @@
 # Pixelborgen
 
-Isometrisk tower-defence-spil i pixel-art til mobilen. Den røde hær af bønder, ravne, riddere og en troldekonge vil storme borgen og tage prinsessen. Byg blå tårne langs vejen og stop dem.
+Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg din by omkring slottet, og forsvar den mod den røde hær.
+
+Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 60 × 60 felter.
 
 Grafikken er inspireret af *Diplomacy is Not an Option* (varme middelalderfarver, kantet low-poly-skygge, byzantinske bygninger) og *Fat Princess* (chibi-figurer med store hoveder, tykke konturer, rødt mod blåt).
 
@@ -13,7 +15,7 @@ Du skal have [Node.js](https://nodejs.org) 20 eller nyere.
 ```bash
 npm install        # hent pakkerne
 npm run dev        # start spillet på http://localhost:5173 (også synligt på dit netværk)
-npm test           # kør testene af spillogikken
+npm test           # kør testene af spillets regler
 npm run build      # byg spillet til mappen dist/
 npm run build:single  # byg hele spillet som én HTML-fil i dist-single/
 ```
@@ -22,21 +24,20 @@ npm run build:single  # byg hele spillet som én HTML-fil i dist-single/
 
 ```
 src/
-  game/        Spillets regler: kort, vej, tårne, fjender og bølger. Ingen grafik.
-    data.ts      Tal for tårne og fjender (pris, skade, fart …). Justér balancen her.
-    level.ts     Kortet og vejen.
-    waves.ts     Hvilke fjender hver bølge består af.
-    game.ts      Selve simuleringen.
-    game.test.ts Test af reglerne.
+  game/        Spillets regler: kortet og bygningerne. Ingen grafik.
+    city.ts      Kortet (60 × 60 felter) og placering af bygninger.
+    city.test.ts Test af reglerne.
   art/         Pixel-grafikken, tegnet i kode ved opstart.
   scenes/      Phaser-scenen, der tegner kortet isometrisk og håndterer tryk, træk og zoom.
-  ui/          Knapper og menuer omkring kortet (HTML).
+  ui/          Knapper og tekst omkring kortet (HTML).
   iso.ts       Omregning mellem gitter og skærm.
-  session.ts   Hvad spilleren er i gang med: valgt felt, hastighed, pause og rekord.
+  session.ts   Hvad spilleren er i gang med, fx hvor slottet skal stå.
   audio.ts     Lydeffekter lavet med Web Audio.
 ```
 
 Reglerne i `src/game` kender ikke til skærmen. Derfor kan grafikken skiftes ud, fx med håndtegnede PNG-filer, uden at spillet ændrer sig.
+
+Tower-defence-versionen af spillet findes stadig i Git-historikken (commit `d19260c`), hvis vi vil hente tårne og fjender tilbage.
 
 ## Lav en app med Capacitor
 
