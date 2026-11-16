@@ -1,8 +1,8 @@
-// Isometric projection. A grid tile (c, r) becomes a 32×16 pixel diamond on screen.
+// Isometric projection. A grid tile (c, r) becomes a 64×32 pixel diamond on screen.
 // Grid x grows towards the lower right of the screen, grid y towards the lower left.
 
-export const TILE_W = 32;
-export const TILE_H = 16;
+export const TILE_W = 64;
+export const TILE_H = 32;
 const HW = TILE_W / 2;
 const HH = TILE_H / 2;
 

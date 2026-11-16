@@ -38,6 +38,9 @@ export const PAL = {
   tileHi: '#f58a5c', tile1: '#e5533f', tile2: '#bb3530', tile3: '#86232a',
   moat1: '#3d8fe0', moat2: '#5fb0f0', moatHi: '#c4e9ff', cobble1: '#a2a2ac', cobble2: '#7c7c88', cobble3: '#5c5c68',
   glow: '#ffc85a',
+  // dark grey fortress stone, as in the owner's castle reference
+  fortTop: '#a6a6b0', fort1: '#8d8d98', fort2: '#676773', fort3: '#4b4b57', fortMortar: '#393943',
+  window: '#ffe85a', chain: '#2e2e38',
 } as const;
 
 export type Ctx = CanvasRenderingContext2D;

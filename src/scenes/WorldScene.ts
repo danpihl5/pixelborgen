@@ -13,9 +13,9 @@ const GROUND_LAYER = -100000;
 const PLAN_LAYER = -50000;
 const FX_LAYER = 100000;
 const DRAG_START = 8;
-const MAX_ZOOM = 5;
+const MAX_ZOOM = 3;
 /** Zoom the game opens at: close enough to pick a spot with a finger. */
-const START_ZOOM = 2;
+const START_ZOOM = 1;
 
 interface Particle { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; color: number }
 
@@ -56,8 +56,8 @@ export class WorldScene extends Phaser.Scene {
     this.session.city.props.forEach((prop, i) => {
       const key = prop.kind === 'tree' ? `tree${(prop.c * 7 + prop.r * 3) % 4}` : `rock${i % 3 === 0 ? 1 : 0}`;
       const a = this.art.get(key)!;
-      const jx = ((prop.c * 13 + prop.r * 7) % 5) - 2;
-      const jy = ((prop.c * 5 + prop.r * 11) % 3) - 1;
+      const jx = ((prop.c * 13 + prop.r * 7) % 9) - 4;
+      const jy = ((prop.c * 5 + prop.r * 11) % 5) - 2;
       const p = toScreen(prop.c + 0.5, prop.r + 0.5);
       this.add.image(p.x + jx, p.y + jy, key)
         .setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height)
@@ -69,8 +69,8 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(castle.fx / castle.canvas.width, castle.fy / castle.canvas.height)
       .setAlpha(0.6).setVisible(false);
 
-    const pad = 32;
-    this.worldBounds.setTo(-ground.ox - pad, -80, ground.canvas.width + pad * 2, ground.canvas.height + 80 + pad);
+    const pad = 64;
+    this.worldBounds.setTo(-ground.ox - pad, -180, ground.canvas.width + pad * 2, ground.canvas.height + 180 + pad);
     this.fitCamera(true);
     this.scale.on('resize', () => this.fitCamera(false));
     this.setupInput();
@@ -88,7 +88,7 @@ export class WorldScene extends Phaser.Scene {
   private fitCamera(initial: boolean): void {
     const cam = this.cameras.main;
     const b = this.worldBounds;
-    this.minZoom = Math.max(0.15, Math.min(cam.width / b.width, cam.height / b.height));
+    this.minZoom = Math.max(0.08, Math.min(cam.width / b.width, cam.height / b.height));
     if (initial) {
       cam.setZoom(Phaser.Math.Clamp(START_ZOOM, this.minZoom, MAX_ZOOM));
       this.applyBounds();
@@ -219,13 +219,13 @@ export class WorldScene extends Phaser.Scene {
     // The footprint on the ground, pulsing gently, with its tiles marked out.
     const corners = [at(0, 0), at(d.w, 0), at(d.w, d.h), at(0, d.h)];
     g.fillStyle(color, 0.25 + 0.1 * Math.sin(this.clock * 5)).fillPoints(corners, true);
-    g.lineStyle(1, color, 0.5);
+    g.lineStyle(2, color, 0.5);
     for (let i = 1; i < d.w; i++) g.lineBetween(at(i, 0).x, at(i, 0).y, at(i, d.h).x, at(i, d.h).y);
     for (let i = 1; i < d.h; i++) g.lineBetween(at(0, i).x, at(0, i).y, at(d.w, i).x, at(d.w, i).y);
-    g.lineStyle(1, color, 1).strokePoints(corners, true);
+    g.lineStyle(2, color, 1).strokePoints(corners, true);
 
     const f = this.footOf(plan);
-    this.ghost.setPosition(f.x, f.y - 2 - Math.round(Math.abs(Math.sin(this.clock * 3)) * 2)).setDepth(f.depth);
+    this.ghost.setPosition(f.x, f.y - 3 - Math.round(Math.abs(Math.sin(this.clock * 3)) * 4)).setDepth(f.depth);
     if (ok) this.ghost.clearTint(); else this.ghost.setTint(hex(PAL.red1));
   }
 
@@ -236,12 +236,12 @@ export class WorldScene extends Phaser.Scene {
     for (let y = 0; y <= d.h; y++) {
       for (let x = 0; x <= d.w; x++) {
         const p = toScreen(b.c + x, b.r + y);
-        this.burst(p.x, p.y, 2, PAL.dirt1, 5, 30);
-        this.burst(p.x, p.y, 2, PAL.white, 3, 20, false);
+        this.burst(p.x, p.y, 4, PAL.dirt1, 8, 60);
+        this.burst(p.x, p.y, 4, PAL.white, 5, 40, false);
       }
     }
     const mid = toScreen(b.c + d.w / 2, b.r + d.h / 2);
-    this.burst(mid.x, mid.y, 50, PAL.gold, 24, 45);
+    this.burst(mid.x, mid.y, 90, PAL.gold, 40, 90);
     this.cameras.main.shake(180, 0.004);
     play('build');
   }
@@ -252,7 +252,7 @@ export class WorldScene extends Phaser.Scene {
       const v = speed * (0.4 + Math.random() * 0.6);
       this.particles.push({
         x, y, z, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5,
-        vz: gravity ? 20 + Math.random() * 30 : (Math.random() - 0.5) * 20,
+        vz: gravity ? 40 + Math.random() * 60 : (Math.random() - 0.5) * 40,
         life: 0.4 + Math.random() * 0.5, color: hex(color),
       });
     }
@@ -261,7 +261,7 @@ export class WorldScene extends Phaser.Scene {
   private updateParticles(dt: number): void {
     for (const q of this.particles) {
       q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
-      q.vz -= 120 * dt;
+      q.vz -= 240 * dt;
       if (q.z < 0) { q.z = 0; q.vz = 0; q.vx *= 0.5; q.vy *= 0.5; }
       q.life -= dt;
     }
@@ -271,6 +271,6 @@ export class WorldScene extends Phaser.Scene {
   private drawFx(): void {
     const g = this.fxGfx;
     g.clear();
-    for (const q of this.particles) g.fillStyle(q.color, 1).fillRect(Math.round(q.x), Math.round(q.y - q.z), 1, 1);
+    for (const q of this.particles) g.fillStyle(q.color, 1).fillRect(Math.round(q.x), Math.round(q.y - q.z), 2, 2);
   }
 }

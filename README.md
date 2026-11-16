@@ -4,7 +4,7 @@ Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg
 
 Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter.
 
-Grafikken er klassisk isometrisk pixel-art: mættet græs, jordskrænter, runde træer, grå sten og et slot med røde kegletage, voldgrav og bro.
+Grafikken er klassisk isometrisk pixel-art: mættet græs, jordskrænter, runde træer, grå sten og et slot i mørkegrå sten med røde tårntage, blåt tag og banner på hovedtårnet, voldgrav og vindebroer.
 
 Lavet med [Phaser 3](https://phaser.io), TypeScript og Vite. [Capacitor](https://capacitorjs.com) gør det til en app til iPhone og Android.
 
