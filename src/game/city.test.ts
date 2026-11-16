@@ -36,6 +36,19 @@ describe('city', () => {
     expect(city.buildings).toHaveLength(1);
   });
 
+  it('builds other buildings only after the castle, and not on top of each other', () => {
+    const city = new City(30, []);
+    expect(city.canPlace('tavern', 5, 5)).toBe(false);
+    city.place('castle', 10, 10);
+    expect(city.place('tavern', 5, 5)).not.toBeNull();
+    expect(city.place('wizard', 6, 6)).toBeNull();
+    const farm = city.place('farm', 7, 5);
+    expect(farm).not.toBeNull();
+    expect(city.buildingAt(9, 7)).toBe(farm);
+    expect(city.canPlace('farm', 28, 28)).toBe(false);
+    expect(city.buildings).toHaveLength(3);
+  });
+
   it('does not build on trees or rocks', () => {
     const city = new City(30, [{ kind: 'tree', c: 5, r: 5 }, { kind: 'rock', c: 9, r: 9 }]);
     expect(city.canPlace('castle', 4, 4)).toBe(false);

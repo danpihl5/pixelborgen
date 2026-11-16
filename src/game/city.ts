@@ -5,7 +5,7 @@ import { generateScenery, type Prop } from './scenery';
 
 export const MAP_SIZE = 30;
 
-export type BuildingType = 'castle';
+export type BuildingType = 'castle' | 'tavern' | 'farm' | 'wizard';
 
 export interface BuildingDef {
   name: string;
@@ -16,7 +16,13 @@ export interface BuildingDef {
 
 export const BUILDINGS: Record<BuildingType, BuildingDef> = {
   castle: { name: 'Slot', w: 2, h: 2 },
+  tavern: { name: 'Ølstue', w: 2, h: 2 },
+  farm: { name: 'Farmerhus', w: 3, h: 3 },
+  wizard: { name: 'Troldmandshus', w: 2, h: 2 },
 };
+
+/** Buildings the player can put up once the castle stands. */
+export const BUILDABLE: BuildingType[] = ['tavern', 'farm', 'wizard'];
 
 export interface Building {
   id: number;
@@ -66,7 +72,8 @@ export class City {
   }
 
   canPlace(type: BuildingType, c: number, r: number): boolean {
-    if (type === 'castle' && this.phase !== 'placeCastle') return false;
+    // The castle comes first and there is only one; everything else is built after it.
+    if ((type === 'castle') !== (this.phase === 'placeCastle')) return false;
     return this.fits(type, c, r);
   }
 

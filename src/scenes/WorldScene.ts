@@ -3,7 +3,7 @@
 
 import Phaser from 'phaser';
 import { play } from '../audio';
-import { BUILDINGS, type Building } from '../game/city';
+import { BUILDINGS, type Building, type BuildingType } from '../game/city';
 import { depthOf, toGrid, toScreen } from '../iso';
 import { PAL } from '../art/pixels';
 import { drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures';
@@ -23,7 +23,7 @@ const hex = (c: string) => parseInt(c.slice(1), 16);
 
 export class WorldScene extends Phaser.Scene {
   private session: Session;
-  private castle: SpriteArt;
+  private buildingArt: Record<BuildingType, SpriteArt>;
   private art = new Map<string, SpriteArt>();
   private buildingSprites = new Map<number, Phaser.GameObjects.Image>();
   private ghost!: Phaser.GameObjects.Image;
@@ -37,18 +37,17 @@ export class WorldScene extends Phaser.Scene {
   private drag = { active: false, moved: false, x: 0, y: 0 };
   private pinch: { dist: number; zoom: number } | null = null;
 
-  constructor(session: Session, castle: SpriteArt) {
+  constructor(session: Session, buildingArt: Record<BuildingType, SpriteArt>) {
     super('world');
     this.session = session;
-    this.castle = castle;
+    this.buildingArt = buildingArt;
   }
 
   create(): void {
     const size = this.session.city.size;
     const ground = drawGround(size);
     this.textures.addCanvas('ground', ground.canvas);
-    const castle = this.castle;
-    this.register('castle', castle);
+    for (const [type, a] of Object.entries(this.buildingArt)) this.register(type, a);
     for (let i = 0; i < 4; i++) this.register(`tree${i}`, drawTree(i));
     for (let i = 0; i < 2; i++) this.register(`rock${i}`, drawRock(i));
 
@@ -67,9 +66,7 @@ export class WorldScene extends Phaser.Scene {
     });
     this.planGfx = this.add.graphics().setDepth(PLAN_LAYER);
     this.fxGfx = this.add.graphics().setDepth(FX_LAYER);
-    this.ghost = this.add.image(0, 0, 'castle')
-      .setOrigin(castle.fx / castle.canvas.width, castle.fy / castle.canvas.height)
-      .setScale(castle.scale ?? 1).setAlpha(0.6).setVisible(false);
+    this.ghost = this.add.image(0, 0, 'castle').setAlpha(0.6).setVisible(false);
 
     const pad = 64;
     this.worldBounds.setTo(-ground.ox - pad, -180, ground.canvas.width + pad * 2, ground.canvas.height + 180 + pad);
@@ -195,7 +192,7 @@ export class WorldScene extends Phaser.Scene {
   private footOf(b: { type: Building['type']; c: number; r: number }): { x: number; y: number; depth: number } {
     const d = BUILDINGS[b.type];
     const p = toScreen(b.c + d.w / 2, b.r + d.h / 2);
-    return { ...p, depth: depthOf(b.c + d.w, b.r + d.h) };
+    return { ...p, depth: depthOf(b.c + d.w / 2, b.r + d.h / 2) };
   }
 
   private syncBuildings(): void {
@@ -228,7 +225,9 @@ export class WorldScene extends Phaser.Scene {
     g.lineStyle(2, color, 1).strokePoints(corners, true);
 
     const f = this.footOf(plan);
-    this.ghost.setPosition(f.x, f.y - 3 - Math.round(Math.abs(Math.sin(this.clock * 3)) * 4)).setDepth(f.depth);
+    const a = this.art.get(plan.type)!;
+    this.ghost.setTexture(plan.type).setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height).setScale(a.scale ?? 1);
+    this.ghost.setPosition(f.x, f.y - 3 - Math.round(Math.abs(Math.sin(this.clock * 3)) * 4)).setDepth(f.depth + 0.01);
     if (ok) this.ghost.clearTint(); else this.ghost.setTint(hex(PAL.red1));
   }
 
