@@ -28,6 +28,10 @@ export const PAL = {
   raven1: '#4b4a6b', raven2: '#2f2e48', beak: '#f5a524',
   pink1: '#ff9ccf', pink2: '#e070a8',
   ice: '#9ff4ff', magic: '#7ee0ff',
+  // castle: grey-beige masonry and red-brown roof tiles
+  keep1: '#ddd5c4', keep2: '#bdb3a0', keep3: '#958b7a', keepMortar: '#71695d',
+  tile1: '#c95a3b', tile2: '#a1422d', tile3: '#7a2f22',
+  glow: '#ffc85a',
 } as const;
 
 export type Ctx = CanvasRenderingContext2D;

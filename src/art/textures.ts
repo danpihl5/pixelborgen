@@ -278,43 +278,141 @@ export function drawTowerFrost(): SpriteArt {
   return { canvas: outline(cv), fx: cx, fy: FOOT };
 }
 
+// ---------- Castle ----------
+// Grey-beige masonry, round towers with tall red-brown cone roofs and pennants, a tall square
+// keep, battlements, arched windows with warm light and stone-framed gates.
+
+const keepL = bricks(PAL.keep1, PAL.keepMortar);
+const keepR = bricks(PAL.keep2, PAL.keepMortar);
+
+/** Shade across a round surface: lit on the left, dark on the right. */
+function roundShade(f: number, light: string, mid: string, dark: string): string {
+  return f < 0.35 ? light : f < 0.7 ? mid : dark;
+}
+
+/** Half-height of an ellipse of radius `r` (2:1, like the iso grid) at column x. */
+function ellipseAt(cx: number, x: number, r: number): number {
+  const t = (x + 0.5 - cx) / r;
+  return Math.abs(t) >= 1 ? -1 : (r / 2) * Math.sqrt(1 - t * t);
+}
+
+/** Battlements along the four top edges of a diamond `w` wide centred at (cx, cy). */
+function merlons(ctx: Ctx, cx: number, cy: number, w: number, edges: 'back' | 'front', light: string, dark: string): void {
+  for (let i = 0; i <= w / 2 - 2; i += 4) {
+    if (edges === 'back') {
+      px(ctx, cx - w / 2 + i, cy - i / 2 - 2, light, 2, 2);
+      px(ctx, cx + w / 2 - 2 - i, cy - i / 2 - 2, dark, 2, 2);
+    } else {
+      px(ctx, cx - w / 2 + i, cy + i / 2 - 2, light, 2, 2);
+      px(ctx, cx + w / 2 - 2 - i, cy + i / 2 - 2, dark, 2, 2);
+    }
+  }
+}
+
+function pennant(ctx: Ctx, x: number, y: number, pole: number): void {
+  px(ctx, x, y - pole, PAL.outline, 1, pole);
+  drawRows(ctx, ['rrrr', 'rRRrrr', 'rrr..', 'r'], { r: PAL.tile1, R: PAL.white }, x + 1, y - pole);
+}
+
+/** A round tower with an overhanging battlement ring and a tall cone roof. Returns the apex y. */
+function roundTower(ctx: Ctx, cx: number, footY: number, r: number, h: number, roofH: number, small = false): number {
+  const top = footY - h;
+  // Body with curved brick courses.
+  for (let x = cx - r; x < cx + r; x++) {
+    const e = ellipseAt(cx, x, r);
+    if (e < 0) continue;
+    const base = roundShade((x - (cx - r)) / (2 * r), PAL.keep1, PAL.keep2, PAL.keep3);
+    const yTop = Math.round(top + e), yBot = Math.round(footY + e);
+    for (let y = yTop; y <= yBot; y++) {
+      const k = yBot - y;
+      const mortar = k % 4 === 3 || (x + (Math.floor(k / 4) % 2) * 3) % 6 === 0;
+      px(ctx, x, y, mortar ? PAL.keepMortar : base);
+    }
+  }
+  if (!small) drawRows(ctx, ['.o.', 'ogo', 'ogo', 'ooo'], { o: PAL.outline, g: PAL.glow }, cx - Math.round(r / 2) - 1, top + Math.round(h * 0.35));
+
+  // Battlement ring, a little wider than the tower.
+  const R = r + 2, ringTop = top - 3, ringBot = top + 2;
+  for (let x = cx - R; x < cx + R; x++) {
+    const e = ellipseAt(cx, x, R);
+    if (e < 0) continue;
+    const base = roundShade((x - (cx - R)) / (2 * R), PAL.keep1, PAL.keep2, PAL.keep3);
+    for (let y = Math.round(ringTop - e); y < Math.round(ringTop + e); y++) px(ctx, x, y, PAL.keep3);
+    for (let y = Math.round(ringTop + e); y <= Math.round(ringBot + e); y++) px(ctx, x, y, base);
+    px(ctx, x, Math.round(ringBot + e) + 1, PAL.keepMortar);
+    if ((x - (cx - R)) % 4 < 2) {
+      px(ctx, x, Math.round(ringTop - e) - 2, PAL.keep2, 1, 2);
+      px(ctx, x, Math.round(ringTop + e) - 2, base, 1, 2);
+    }
+  }
+
+  // Cone roof with rows of tiles and a curved eave.
+  const RR = R - 1, baseY = ringTop - 1, apex = baseY - roofH;
+  for (let y = apex; y <= baseY; y++) {
+    const hw = (RR * (y - apex)) / roofH;
+    for (let x = Math.round(cx - hw); x < Math.round(cx + hw); x++) {
+      const c = roundShade((x - (cx - hw)) / Math.max(1, 2 * hw), PAL.tile1, PAL.tile2, PAL.tile3);
+      px(ctx, x, y, (baseY - y) % 3 === 0 ? (c === PAL.tile1 ? PAL.tile2 : PAL.tile3) : c);
+    }
+  }
+  for (let x = cx - RR; x < cx + RR; x++) {
+    const e = ellipseAt(cx, x, RR);
+    if (e < 0) continue;
+    const c = roundShade((x - (cx - RR)) / (2 * RR), PAL.tile1, PAL.tile2, PAL.tile3);
+    for (let y = baseY; y <= Math.round(baseY + e); y++) px(ctx, x, y, y === Math.round(baseY + e) ? PAL.tile3 : c);
+  }
+  if (!small) pennant(ctx, cx, apex, 9);
+  return apex;
+}
+
+function gate(ctx: Ctx, x: number, y: number): void {
+  drawRows(ctx, [
+    '..sss..',
+    '.sooos.',
+    'sowwwos',
+    'sowdwos',
+    'sowdwos',
+    'sowwwos',
+    'sowdwos',
+    'kkkkkkk',
+    '.KKKKK.',
+  ], { s: PAL.keep1, o: PAL.outline, w: PAL.wood1, d: PAL.wood3, k: PAL.keep2, K: PAL.keep3 }, x, y);
+}
+
 /** The castle on a 2 × 2 footprint. Its foot is the centre of the footprint. */
 export function drawCastle(): SpriteArt {
-  const [cv, ctx] = makeCanvas(84, 112);
-  const cx = 42, foot = 98;
-  prism(ctx, cx, foot, 60, 5, PAL.rock1, PAL.rock2, PAL.rock3);
-  const wallTop = prism(ctx, cx, foot - 5, 52, 14, PAL.stone2, stoneL, stoneR);
-  // Merlons along the front edges of the wall.
-  for (let i = 0; i <= 24; i += 4) {
-    px(ctx, cx - 26 + i, wallTop + Math.floor(i / 2) - 2, PAL.stone1, 2, 2);
-    px(ctx, cx + 24 - i, wallTop + Math.floor(i / 2) - 2, PAL.stone2, 2, 2);
+  const [cv, ctx] = makeCanvas(86, 164);
+  const cx = 43, foot = 152;
+  prism(ctx, cx, foot, 58, 4, PAL.rock1, PAL.rock2, PAL.rock3);
+
+  // Curtain wall.
+  const wallTop = prism(ctx, cx, foot - 4, 48, 18, PAL.keep2, keepL, keepR);
+  merlons(ctx, cx, wallTop, 48, 'back', PAL.keep1, PAL.keep2);
+
+  // The tall square keep with an overhanging battlement and a steep roof.
+  const keepTop = prism(ctx, cx, wallTop + 2, 24, 52, PAL.keep2, keepL, keepR);
+  for (const [wx, wy] of [[cx - 8, keepTop + 12], [cx - 8, keepTop + 28], [cx + 5, keepTop + 12], [cx + 5, keepTop + 28]]) {
+    drawRows(ctx, ['.o.', 'ogo', 'ogo', 'ooo'], { o: PAL.outline, g: PAL.glow }, wx, wy);
   }
-  // Gate in the left wall.
-  drawRows(ctx, [
-    '.oooo.', 'owwwwo', 'owdwdo', 'owdwdo', 'owwwwo', 'owdwdo', 'owdwdo', 'owwwwo',
-  ], { o: PAL.outline, w: PAL.wood2, d: PAL.wood3 }, cx - 17, wallTop + 11);
-  const keep = prism(ctx, cx, wallTop + 3, 28, 24, PAL.stone1, stoneL, stoneR);
-  for (const wx of [cx - 9, cx + 6]) drawRows(ctx, ['.o.', 'obo', 'obo', 'obo'], { o: PAL.outline, b: PAL.blue3 }, wx, keep + 10);
-  const apex = pyramid(ctx, cx, keep, 32, 18, PAL.roof1, PAL.roof2, [PAL.roof2, '#933a22']);
-  banner(ctx, cx, apex, PAL.blue2, PAL.blue1, 12);
-  // Corner towers: a blue dome on the left, a red cone on the right.
-  const lt = prism(ctx, cx - 24, foot - 10, 12, 34, PAL.stone1, stoneL, stoneR);
-  const ld = dome(ctx, cx - 24, lt + 1, 7, 7, PAL.blue1, PAL.blue2, PAL.blue3);
-  px(ctx, cx - 25, ld - 3, PAL.gold, 2, 3);
-  const rt = prism(ctx, cx + 24, foot - 10, 12, 34, PAL.stone1, stoneL, stoneR);
-  const ra = pyramid(ctx, cx + 24, rt, 16, 12, PAL.roof1, PAL.roof2);
-  banner(ctx, cx + 24, ra, PAL.blue2, PAL.blue1, 8);
-  // The princess, waving from the wall.
-  drawRows(ctx, [
-    '.g.g.',
-    '.ggg.',
-    'yssyy',
-    'ysesy',
-    '.sss.s',
-    '.ppp.s',
-    'ppppp',
-    'PPPPP',
-  ], { g: PAL.gold, y: PAL.gold, s: PAL.skin1, e: PAL.outline, p: PAL.pink1, P: PAL.pink2 }, cx + 9, wallTop - 2);
+  const ring = prism(ctx, cx, keepTop + 3, 28, 5, PAL.keep3, PAL.keep1, PAL.keep2);
+  merlons(ctx, cx, ring, 28, 'back', PAL.keep1, PAL.keep2);
+  const apex = pyramid(ctx, cx, ring, 26, 32, PAL.tile1, PAL.tile2, [PAL.tile2, PAL.tile3]);
+  merlons(ctx, cx, ring, 28, 'front', PAL.keep1, PAL.keep2);
+  pennant(ctx, cx, apex, 11);
+
+  merlons(ctx, cx, wallTop, 48, 'front', PAL.keep1, PAL.keep2);
+  gate(ctx, cx - 17, wallTop + 9);
+  gate(ctx, cx + 10, wallTop + 9);
+
+  // Round towers on the side corners and a small turret on the front corner.
+  roundTower(ctx, cx - 24, foot - 6, 8, 44, 24);
+  roundTower(ctx, cx + 24, foot - 6, 8, 44, 24);
+  roundTower(ctx, cx, foot + 7, 5, 24, 12, true);
+
+  // A little greenery at the foot, as in the reference pictures.
+  const leaf = (x: number, y: number) => (x + y < 0 ? PAL.grass1 : PAL.grass3);
+  circleBlob(ctx, [[cx - 33, foot - 1, 4], [cx - 29, foot + 2, 3.5]], (x, y) => leaf(x - (cx - 31), y - foot));
+  circleBlob(ctx, [[cx + 31, foot, 4], [cx + 27, foot + 3, 3]], (x, y) => leaf(x - (cx + 29), y - foot));
   return { canvas: outline(cv), fx: cx, fy: foot };
 }
 

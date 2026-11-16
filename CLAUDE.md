@@ -1,6 +1,6 @@
 # Pixelborgen
 
-Isometric pixel-art city builder with tower-defence elements, for phones. Early stage: a 60 × 60 grass map where the player places a 2 × 2 castle. Phaser 3 + TypeScript + Vite, wrapped as an app with Capacitor. The owner speaks Danish: all player-facing text and the README are in Danish; code and comments are in English.
+Isometric pixel-art city builder with tower-defence elements, for phones. Early stage: a 30 × 30 grass map where the player places a 2 × 2 castle. Phaser 3 + TypeScript + Vite, wrapped as an app with Capacitor. The owner speaks Danish: all player-facing text and the README are in Danish; code and comments are in English.
 
 ## Commands
 
@@ -15,6 +15,7 @@ Isometric pixel-art city builder with tower-defence elements, for phones. Early 
 - The earlier tower-defence version (towers, enemies, waves, chibi art) is in git history at `d19260c`; the tower and character drawing code is still in `src/art/textures.ts`.
 - `src/iso.ts` is the only place that knows the isometric projection (32×16 tiles).
 - `src/art/` draws every texture onto canvases at start-up. Each sprite has a foot point (`fx`, `fy`) that stands on the tile centre.
+- The castle follows two reference pictures from the owner: grey-beige masonry, round towers with tall red-brown cone roofs and pennants, a tall square keep in the middle, battlements and arched windows.
 - Art direction: inspired by *Diplomacy is Not an Option* (warm medieval palette, flat faceted low-poly shading, Byzantine/Roman buildings with terracotta roofs and domes) and *Fat Princess* (chibi characters with big square heads, thick dark outlines via `outline()`, red army vs. blue towers, cartoon plants). Keep it family-friendly: dust poofs and coins, no blood.
 - `src/scenes/WorldScene.ts` renders the city and the placement ghost, and handles tap/drag/pinch/wheel.
 - `src/ui/hud.ts` is the HTML title bar and tray; `src/session.ts` holds the city and the unconfirmed placement, shared by both.

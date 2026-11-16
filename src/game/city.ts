@@ -1,7 +1,7 @@
 // The city: a square grid of tiles and the buildings standing on it. No graphics in here;
 // the renderer reads this state, and positions are grid tiles, not screen pixels.
 
-export const MAP_SIZE = 60;
+export const MAP_SIZE = 30;
 
 export type BuildingType = 'castle';
 

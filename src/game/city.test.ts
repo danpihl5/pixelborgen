@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { City } from './city';
 
 describe('city', () => {
-  it('is a 60 × 60 map that starts by asking for the castle', () => {
+  it('is a 30 × 30 map that starts by asking for the castle', () => {
     const city = new City();
-    expect(city.size).toBe(60);
+    expect(city.size).toBe(30);
     expect(city.phase).toBe('placeCastle');
     expect(city.buildings).toHaveLength(0);
   });
@@ -23,9 +23,9 @@ describe('city', () => {
   it('keeps the whole footprint on the map', () => {
     const city = new City();
     expect(city.canPlace('castle', -1, 5)).toBe(false);
-    expect(city.canPlace('castle', 59, 5)).toBe(false);
-    expect(city.canPlace('castle', 5, 59)).toBe(false);
-    expect(city.canPlace('castle', 58, 58)).toBe(true);
+    expect(city.canPlace('castle', 29, 5)).toBe(false);
+    expect(city.canPlace('castle', 5, 29)).toBe(false);
+    expect(city.canPlace('castle', 28, 28)).toBe(true);
   });
 
   it('allows only one castle', () => {

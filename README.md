@@ -2,7 +2,7 @@
 
 Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg din by omkring slottet, og forsvar den mod den røde hær.
 
-Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 60 × 60 felter.
+Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter.
 
 Grafikken er inspireret af *Diplomacy is Not an Option* (varme middelalderfarver, kantet low-poly-skygge, byzantinske bygninger) og *Fat Princess* (chibi-figurer med store hoveder, tykke konturer, rødt mod blåt).
 
@@ -25,7 +25,7 @@ npm run build:single  # byg hele spillet som én HTML-fil i dist-single/
 ```
 src/
   game/        Spillets regler: kortet og bygningerne. Ingen grafik.
-    city.ts      Kortet (60 × 60 felter) og placering af bygninger.
+    city.ts      Kortet (30 × 30 felter) og placering af bygninger.
     city.test.ts Test af reglerne.
   art/         Pixel-grafikken, tegnet i kode ved opstart.
   scenes/      Phaser-scenen, der tegner kortet isometrisk og håndterer tryk, træk og zoom.
