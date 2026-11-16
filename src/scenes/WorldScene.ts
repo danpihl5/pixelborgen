@@ -10,6 +10,7 @@ import { drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures'
 import type { Session } from '../session';
 
 const GROUND_LAYER = -100000;
+const GRID_LAYER = -90000;
 const PLAN_LAYER = -50000;
 const FX_LAYER = 100000;
 const DRAG_START = 8;
@@ -27,6 +28,7 @@ export class WorldScene extends Phaser.Scene {
   private art = new Map<string, SpriteArt>();
   private buildingSprites = new Map<number, Phaser.GameObjects.Image>();
   private ghost!: Phaser.GameObjects.Image;
+  private gridGfx!: Phaser.GameObjects.Graphics;
   private planGfx!: Phaser.GameObjects.Graphics;
   private fxGfx!: Phaser.GameObjects.Graphics;
   private particles: Particle[] = [];
@@ -64,6 +66,13 @@ export class WorldScene extends Phaser.Scene {
         .setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height)
         .setDepth(depthOf(prop.c + 0.5, prop.r + 0.5));
     });
+    // A faint tile grid, shown only while the player is placing a building.
+    this.gridGfx = this.add.graphics().setDepth(GRID_LAYER).setVisible(false);
+    this.gridGfx.lineStyle(1, hex(PAL.white), 0.14);
+    for (let i = 0; i <= size; i++) {
+      const a = toScreen(i, 0), b = toScreen(i, size), c = toScreen(0, i), d = toScreen(size, i);
+      this.gridGfx.lineBetween(a.x, a.y, b.x, b.y).lineBetween(c.x, c.y, d.x, d.y);
+    }
     this.planGfx = this.add.graphics().setDepth(PLAN_LAYER);
     this.fxGfx = this.add.graphics().setDepth(FX_LAYER);
     this.ghost = this.add.image(0, 0, 'castle').setAlpha(0.6).setVisible(false);
@@ -206,6 +215,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private drawPlan(): void {
+    this.gridGfx.setVisible(this.session.selected !== null);
     const g = this.planGfx;
     g.clear();
     const plan = this.session.plan;

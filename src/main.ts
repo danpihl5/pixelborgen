@@ -18,17 +18,23 @@ async function start(): Promise<void> {
   const session = new Session();
   setupHud(session);
 
+  const host = document.getElementById('game')!;
   const phaser = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
     backgroundColor: '#241a17',
     pixelArt: true,
     roundPixels: true,
-    scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+    // Sized by hand below: Phaser's own RESIZE mode lags a step behind when the tray changes height.
+    scale: { mode: Phaser.Scale.NONE, width: host.clientWidth, height: host.clientHeight },
     input: { activePointers: 2 },
     banner: false,
     scene: [new WorldScene(session, buildingArt)],
   });
+  new ResizeObserver(([entry]) => {
+    const { width, height } = entry.contentRect;
+    phaser.scale.resize(Math.round(width), Math.round(height));
+  }).observe(host);
 
   // Handy in the browser console while developing; left out of the app build.
   if (import.meta.env.DEV) Object.assign(window, { pixelborgen: { session, phaser } });
