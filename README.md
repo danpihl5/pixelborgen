@@ -4,7 +4,7 @@ Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg
 
 Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter og derefter bygge ølstue, farmerhus og troldmandshus (1 × 1 felt hver).
 
-**Bemærk:** Bygningernes grafik i `src/assets/` er klippet ud af andres billeder (bl.a. et stockfoto med vandmærke og et signeret pixel-art-billede) og er kun midlertidige pladsholdere. Billederne skal købes med licens, bruges med kunstnerens tilladelse eller erstattes af egen grafik, før spillet udgives.
+**Bemærk:** Bygningernes grafik i `src/assets/` er klippet ud af andres billeder (bl.a. et stockfoto med vandmærke) og er kun midlertidige pladsholdere. Billederne skal købes med licens, bruges med kunstnerens tilladelse eller erstattes af egen grafik, før spillet udgives.
 
 Lavet med [Phaser 3](https://phaser.io), TypeScript og Vite. [Capacitor](https://capacitorjs.com) gør det til en app til iPhone og Android.
 
