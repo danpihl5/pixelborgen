@@ -6,7 +6,7 @@ import { play } from '../audio';
 import { BUILDINGS, type Building } from '../game/city';
 import { depthOf, toGrid, toScreen } from '../iso';
 import { PAL } from '../art/pixels';
-import { drawCastle, drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures';
+import { drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures';
 import type { Session } from '../session';
 
 const GROUND_LAYER = -100000;
@@ -23,6 +23,7 @@ const hex = (c: string) => parseInt(c.slice(1), 16);
 
 export class WorldScene extends Phaser.Scene {
   private session: Session;
+  private castle: SpriteArt;
   private art = new Map<string, SpriteArt>();
   private buildingSprites = new Map<number, Phaser.GameObjects.Image>();
   private ghost!: Phaser.GameObjects.Image;
@@ -36,16 +37,17 @@ export class WorldScene extends Phaser.Scene {
   private drag = { active: false, moved: false, x: 0, y: 0 };
   private pinch: { dist: number; zoom: number } | null = null;
 
-  constructor(session: Session) {
+  constructor(session: Session, castle: SpriteArt) {
     super('world');
     this.session = session;
+    this.castle = castle;
   }
 
   create(): void {
     const size = this.session.city.size;
     const ground = drawGround(size);
     this.textures.addCanvas('ground', ground.canvas);
-    const castle = drawCastle();
+    const castle = this.castle;
     this.register('castle', castle);
     for (let i = 0; i < 4; i++) this.register(`tree${i}`, drawTree(i));
     for (let i = 0; i < 2; i++) this.register(`rock${i}`, drawRock(i));
@@ -67,7 +69,7 @@ export class WorldScene extends Phaser.Scene {
     this.fxGfx = this.add.graphics().setDepth(FX_LAYER);
     this.ghost = this.add.image(0, 0, 'castle')
       .setOrigin(castle.fx / castle.canvas.width, castle.fy / castle.canvas.height)
-      .setAlpha(0.6).setVisible(false);
+      .setScale(castle.scale ?? 1).setAlpha(0.6).setVisible(false);
 
     const pad = 64;
     this.worldBounds.setTo(-ground.ox - pad, -180, ground.canvas.width + pad * 2, ground.canvas.height + 180 + pad);
@@ -80,7 +82,8 @@ export class WorldScene extends Phaser.Scene {
 
   private register(key: string, a: SpriteArt): void {
     this.art.set(key, a);
-    this.textures.addCanvas(key, a.canvas);
+    const texture = this.textures.addCanvas(key, a.canvas);
+    if (a.smooth) texture?.setFilter(Phaser.Textures.FilterMode.LINEAR);
   }
 
   // ---------- Camera ----------
@@ -200,7 +203,7 @@ export class WorldScene extends Phaser.Scene {
       if (this.buildingSprites.has(b.id)) continue;
       const a = this.art.get(b.type)!;
       const f = this.footOf(b);
-      const img = this.add.image(f.x, f.y, b.type).setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height).setDepth(f.depth);
+      const img = this.add.image(f.x, f.y, b.type).setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height).setScale(a.scale ?? 1).setDepth(f.depth);
       this.buildingSprites.set(b.id, img);
     }
   }

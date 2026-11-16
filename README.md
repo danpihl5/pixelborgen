@@ -4,7 +4,9 @@ Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg
 
 Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter.
 
-Grafikken er klassisk isometrisk pixel-art: mættet græs, jordskrænter, runde træer, grå sten og et slot i mørkegrå sten med røde tårntage, blåt tag og banner på hovedtårnet, voldgrav og vindebroer.
+Grafikken er klassisk isometrisk pixel-art: mættet græs, jordskrænter, runde træer, grå sten og et slot med voldgrav og vindebroer.
+
+**Bemærk:** Slottets grafik (`src/assets/castle.png`) er klippet ud af et stockfoto med vandmærke og er kun en midlertidig pladsholder. Billedet skal købes med licens eller erstattes af egen grafik, før spillet udgives.
 
 Lavet med [Phaser 3](https://phaser.io), TypeScript og Vite. [Capacitor](https://capacitorjs.com) gør det til en app til iPhone og Android.
 
@@ -28,7 +30,8 @@ src/
     city.ts      Kortet (30 × 30 felter) og placering af bygninger.
     scenery.ts   Træer og sten, der optager felter på kortet.
     city.test.ts Test af reglerne.
-  art/         Pixel-grafikken, tegnet i kode ved opstart.
+  art/         Pixel-grafikken, tegnet i kode ved opstart. Slottet hentes fra et billede.
+  assets/      Billedfiler, fx slottet.
   scenes/      Phaser-scenen, der tegner kortet isometrisk og håndterer tryk, træk og zoom.
   ui/          Knapper og tekst omkring kortet (HTML).
   iso.ts       Omregning mellem gitter og skærm.
