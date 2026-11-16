@@ -263,12 +263,13 @@ function dots(ctx: Ctx, rand: () => number, cx: number, cy: number, rx: number, 
 }
 
 /** How many tree and bush variants `drawTree` knows. */
-export const TREE_VARIANTS = 12;
+export const TREE_VARIANTS = 11;
 
 /**
  * Trees and bushes in the style of the owner's pictures. Variants:
- * 0–1 round leafy trees, 2–3 low bushes, 4 pine, 5 slim poplar, 6 apple tree,
- * 7 autumn tree, 8 broad twin-trunk oak, 9 blossom tree, 10 young tree, 11 flowering bush.
+ * 0–1 round leafy trees, 2–3 low bushes, 4 slim poplar, 5 apple tree, 6 autumn tree,
+ * 7 broad twin-trunk oak, 8 blossom tree, 9 young tree, 10 flowering bush.
+ * Trunks run up into the middle of the crown, so no gap shows beneath it.
  */
 export function drawTree(variant: number): SpriteArt {
   const [cv, ctx] = makeCanvas(72, 92);
@@ -277,53 +278,41 @@ export function drawTree(variant: number): SpriteArt {
   switch (variant) {
     case 0: case 1: {
       const s = variant === 0 ? 1 : 0.9;
-      trunk(ctx, cx, base, 14);
+      trunk(ctx, cx, base, Math.round(34 * s));
       crown(ctx, blob(rand, cx, base - 34 * s, 17 * s, 14 * s, 26, 5 * s), rand);
       break;
     }
     case 2: case 3:
       crown(ctx, blob(rand, cx, base - 12, 12, 10, 14, 3.6), rand, variant === 3 ? DEEP : GREEN);
       break;
-    case 4: {
-      // Pine: tiers of bumps narrowing towards the top.
-      trunk(ctx, cx, base, 10, 4);
-      for (let t = 0; t < 5; t++) {
-        const y = base - 14 - t * 11, wTier = 16 - t * 3;
-        const tier: [number, number, number][] = [];
-        for (let i = 0; i < 6; i++) tier.push([cx + (i / 5 - 0.5) * 2 * wTier, y - Math.abs(i / 5 - 0.5) * 4, 5 - t * 0.5 + rand()]);
-        crown(ctx, tier, rand, DEEP);
-      }
-      crown(ctx, [[cx, base - 72, 3.5]], rand, DEEP);
-      break;
-    }
-    case 5:
+    case 4:
       // Slim poplar.
-      trunk(ctx, cx, base, 8, 4);
+      trunk(ctx, cx, base, 38, 4);
       crown(ctx, blob(rand, cx, base - 38, 8, 28, 24, 3.8), rand, DEEP);
       break;
-    case 6:
-      trunk(ctx, cx, base, 14);
+    case 5:
+      trunk(ctx, cx, base, 33);
       crown(ctx, blob(rand, cx, base - 33, 18, 13, 26, 5), rand);
       dots(ctx, rand, cx, base - 33, 18, 13, 9, '#d8402f', '#8e2526');
       break;
-    case 7:
-      trunk(ctx, cx, base, 16, 6, 2);
+    case 6:
+      trunk(ctx, cx, base, 36, 6, 2);
       crown(ctx, blob(rand, cx + 2, base - 36, 16, 14, 24, 5), rand, AUTUMN);
       break;
-    case 8:
+    case 7:
       // Broad oak on two trunks.
-      trunk(ctx, cx - 7, base, 16, 6, -3);
-      trunk(ctx, cx + 7, base, 14, 6, 3);
+      trunk(ctx, cx - 7, base, 34, 6, -3);
+      trunk(ctx, cx + 7, base, 34, 6, 3);
       crown(ctx, blob(rand, cx, base - 34, 25, 14, 34, 5), rand, GOLDEN);
       break;
-    case 9:
-      trunk(ctx, cx, base, 14, 5, -2);
+    case 8:
+      trunk(ctx, cx, base, 33, 5, -2);
       crown(ctx, blob(rand, cx - 1, base - 33, 16, 13, 24, 5), rand);
       dots(ctx, rand, cx - 1, base - 33, 16, 13, 18, '#f7b5cf', '#e07aa6');
       break;
-    case 10:
+    case 9:
       // Young tree: thin trunk, small crown.
-      trunk(ctx, cx, base, 16, 4);
+      trunk(ctx, cx, base, 27, 4);
       crown(ctx, blob(rand, cx, base - 27, 10, 8, 14, 4), rand);
       break;
     default:
