@@ -6,7 +6,7 @@ import { play } from '../audio';
 import { BUILDINGS, type Building } from '../game/city';
 import { depthOf, toGrid, toScreen } from '../iso';
 import { PAL } from '../art/pixels';
-import { drawCastle, drawGround, type SpriteArt } from '../art/textures';
+import { drawCastle, drawGround, drawRock, drawTree, type SpriteArt } from '../art/textures';
 import type { Session } from '../session';
 
 const GROUND_LAYER = -100000;
@@ -46,10 +46,23 @@ export class WorldScene extends Phaser.Scene {
     const ground = drawGround(size);
     this.textures.addCanvas('ground', ground.canvas);
     const castle = drawCastle();
-    this.art.set('castle', castle);
-    this.textures.addCanvas('castle', castle.canvas);
+    this.register('castle', castle);
+    for (let i = 0; i < 4; i++) this.register(`tree${i}`, drawTree(i));
+    for (let i = 0; i < 2; i++) this.register(`rock${i}`, drawRock(i));
 
     this.add.image(-ground.ox, ground.oy, 'ground').setOrigin(0, 0).setDepth(GROUND_LAYER);
+
+    // Trees and rocks, with a little jitter so the woods don't look planted in rows.
+    this.session.city.props.forEach((prop, i) => {
+      const key = prop.kind === 'tree' ? `tree${(prop.c * 7 + prop.r * 3) % 4}` : `rock${i % 3 === 0 ? 1 : 0}`;
+      const a = this.art.get(key)!;
+      const jx = ((prop.c * 13 + prop.r * 7) % 5) - 2;
+      const jy = ((prop.c * 5 + prop.r * 11) % 3) - 1;
+      const p = toScreen(prop.c + 0.5, prop.r + 0.5);
+      this.add.image(p.x + jx, p.y + jy, key)
+        .setOrigin(a.fx / a.canvas.width, a.fy / a.canvas.height)
+        .setDepth(depthOf(prop.c + 0.5, prop.r + 0.5));
+    });
     this.planGfx = this.add.graphics().setDepth(PLAN_LAYER);
     this.fxGfx = this.add.graphics().setDepth(FX_LAYER);
     this.ghost = this.add.image(0, 0, 'castle')
@@ -63,6 +76,11 @@ export class WorldScene extends Phaser.Scene {
     this.setupInput();
 
     this.session.onPlaced((b) => this.celebrate(b));
+  }
+
+  private register(key: string, a: SpriteArt): void {
+    this.art.set(key, a);
+    this.textures.addCanvas(key, a.canvas);
   }
 
   // ---------- Camera ----------

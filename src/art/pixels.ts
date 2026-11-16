@@ -28,9 +28,15 @@ export const PAL = {
   raven1: '#4b4a6b', raven2: '#2f2e48', beak: '#f5a524',
   pink1: '#ff9ccf', pink2: '#e070a8',
   ice: '#9ff4ff', magic: '#7ee0ff',
-  // castle: grey-beige masonry and red-brown roof tiles
-  keep1: '#ddd5c4', keep2: '#bdb3a0', keep3: '#958b7a', keepMortar: '#71695d',
-  tile1: '#c95a3b', tile2: '#a1422d', tile3: '#7a2f22',
+  // Classic isometric pixel-art look (see the owner's reference picture):
+  // saturated flat grass, layered earth cliffs, mauve-grey castle stone, bright red roofs.
+  turf1: '#6cbf3c', turf2: '#64b438', turfHi: '#93d553', turfLo: '#4f9a32', turfTuft: '#3d7f2a',
+  earth1: '#a8743f', earth2: '#87582f', earth3: '#5e3b20',
+  leaf1: '#8fd14f', leaf2: '#5aa83f', leaf3: '#3e8a35', leaf4: '#2a6a2c',
+  boulder1: '#d2d2d8', boulder2: '#a3a3ae', boulder3: '#767684',
+  keep1: '#bcaeb9', keep2: '#9a8a9e', keep3: '#77687e', keepMortar: '#574a5f',
+  tileHi: '#f58a5c', tile1: '#e5533f', tile2: '#bb3530', tile3: '#86232a',
+  moat1: '#3d8fe0', moat2: '#5fb0f0', moatHi: '#c4e9ff', cobble1: '#a2a2ac', cobble2: '#7c7c88', cobble3: '#5c5c68',
   glow: '#ffc85a',
 } as const;
 

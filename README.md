@@ -4,7 +4,7 @@ Isometrisk city-builder med tower-defence-elementer i pixel-art til mobilen. Byg
 
 Spillet er i gang med at blive bygget. Lige nu kan man placere sit slot (2 × 2 felter) på et kort på 30 × 30 felter.
 
-Grafikken er inspireret af *Diplomacy is Not an Option* (varme middelalderfarver, kantet low-poly-skygge, byzantinske bygninger) og *Fat Princess* (chibi-figurer med store hoveder, tykke konturer, rødt mod blåt).
+Grafikken er klassisk isometrisk pixel-art: mættet græs, jordskrænter, runde træer, grå sten og et slot med røde kegletage, voldgrav og bro.
 
 Lavet med [Phaser 3](https://phaser.io), TypeScript og Vite. [Capacitor](https://capacitorjs.com) gør det til en app til iPhone og Android.
 
@@ -26,6 +26,7 @@ npm run build:single  # byg hele spillet som én HTML-fil i dist-single/
 src/
   game/        Spillets regler: kortet og bygningerne. Ingen grafik.
     city.ts      Kortet (30 × 30 felter) og placering af bygninger.
+    scenery.ts   Træer og sten, der optager felter på kortet.
     city.test.ts Test af reglerne.
   art/         Pixel-grafikken, tegnet i kode ved opstart.
   scenes/      Phaser-scenen, der tegner kortet isometrisk og håndterer tryk, træk og zoom.

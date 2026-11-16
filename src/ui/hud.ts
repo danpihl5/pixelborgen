@@ -30,7 +30,7 @@ export function setupHud(session: Session): void {
       const d = BUILDINGS[plan.type];
       const ok = session.planValid;
       tray.innerHTML = `<p class="step">PLACER DIT SLOT</p>
-        <p class="tip">${ok ? `Slottet fylder ${d.w} × ${d.h} felter. Tryk et andet sted for at flytte det.` : 'Slottet skal stå helt inde på kortet.'}</p>
+        <p class="tip">${ok ? `Slottet fylder ${d.w} × ${d.h} felter. Tryk et andet sted for at flytte det.` : 'Slottet skal stå på frit græs, helt inde på kortet.'}</p>
         <div class="actions">
           <button class="btn go big" type="button" data-act="confirm" ${ok ? '' : 'disabled'}>BYG SLOT HER</button>
           <button class="btn" type="button" data-act="cancel">FORTRYD</button>

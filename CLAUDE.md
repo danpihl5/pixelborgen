@@ -15,8 +15,8 @@ Isometric pixel-art city builder with tower-defence elements, for phones. Early 
 - The earlier tower-defence version (towers, enemies, waves, chibi art) is in git history at `d19260c`; the tower and character drawing code is still in `src/art/textures.ts`.
 - `src/iso.ts` is the only place that knows the isometric projection (32×16 tiles).
 - `src/art/` draws every texture onto canvases at start-up. Each sprite has a foot point (`fx`, `fy`) that stands on the tile centre.
-- The castle follows two reference pictures from the owner: grey-beige masonry, round towers with tall red-brown cone roofs and pennants, a tall square keep in the middle, battlements and arched windows.
-- Art direction: inspired by *Diplomacy is Not an Option* (warm medieval palette, flat faceted low-poly shading, Byzantine/Roman buildings with terracotta roofs and domes) and *Fat Princess* (chibi characters with big square heads, thick dark outlines via `outline()`, red army vs. blue towers, cartoon plants). Keep it family-friendly: dust poofs and coins, no blood.
+- Art direction: follow the owner's reference picture of a classic isometric pixel-art castle (see `PAL` in `src/art/pixels.ts`): flat saturated grass with small lit blades (no low-poly facets), layered earth cliffs on the island edge, round bushy trees and grey boulders with dark outlines, mauve-grey castle stone, bright red cone roofs with pennants, a moat with a cobbled rim and a wooden bridge. Characters (from the earlier version) are chibi with thick outlines. Keep it family-friendly.
+- Trees and rocks are game state (`src/game/scenery.ts`): they block their tile, and the centre of the map is kept clear.
 - `src/scenes/WorldScene.ts` renders the city and the placement ghost, and handles tap/drag/pinch/wheel.
 - `src/ui/hud.ts` is the HTML title bar and tray; `src/session.ts` holds the city and the unconfirmed placement, shared by both.
 - Press Start 2P drops the accents on Å and É at small sizes; keep those letters out of pixel-font text (Ø is fine).
