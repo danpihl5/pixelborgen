@@ -16,9 +16,9 @@ export interface BuildingDef {
 
 export const BUILDINGS: Record<BuildingType, BuildingDef> = {
   castle: { name: 'Slot', w: 2, h: 2 },
-  tavern: { name: 'Ølstue', w: 2, h: 2 },
-  farm: { name: 'Farmerhus', w: 3, h: 3 },
-  wizard: { name: 'Troldmandshus', w: 2, h: 2 },
+  tavern: { name: 'Ølstue', w: 1, h: 1 },
+  farm: { name: 'Farmerhus', w: 1, h: 1 },
+  wizard: { name: 'Troldmandshus', w: 1, h: 1 },
 };
 
 /** Buildings the player can put up once the castle stands. */

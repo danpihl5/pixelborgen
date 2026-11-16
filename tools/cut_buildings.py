@@ -2,7 +2,7 @@
 
 Usage: python3 tools/cut_buildings.py <reference-dir> <out-dir> [preview-dir]
 
-The reference directory holds castle.jpg, tavern.jpg, farm.jpg and wizard.png (the pictures
+The reference directory holds castle.webp, tavern.jpg, farm.jpg and wizard.png (the pictures
 are not kept in the repository). For each one this writes <name>.png, stored at twice the
 size it is shown in the game, and <name>.json with the foot point (the spot that stands on
 the centre of the building's footprint) and the width in pixels that spans the footprint.
@@ -41,19 +41,9 @@ def flood_mask(im, seeds, thresh):
 
 
 def castle(im):
-    cx, cy, half = 400, 347, 243
-    diamond = [(cx - half, cy), (cx, cy - half / 2), (cx + half, cy), (cx, cy + half / 2)]
-    outline = [
-        (267, 335), (267, 240), (262, 233), (263, 226), (273, 225), (292, 193), (309, 221),
-        (312, 166), (330, 141), (348, 165), (356, 166), (357, 114), (366, 112), (398, 55),
-        (398, 5), (403, 5), (406, 11), (447, 11), (465, 17), (490, 14), (490, 20), (463, 30),
-        (488, 37), (488, 41), (462, 38), (447, 48), (406, 46), (403, 55),
-        (436, 112), (446, 111), (446, 135), (462, 131), (504, 152), (504, 170), (497, 176),
-        (498, 222), (505, 225), (526, 194), (547, 226), (556, 226), (556, 246), (550, 251), (550, 340),
-    ]
-    mask = polygon_mask(im.size, [outline])
-    ImageDraw.Draw(mask).polygon(diamond, fill=255)
-    return mask, (cx, cy), 2 * half, 2
+    # The castle stands on a dark background; its grass base is the 2 x 2 footprint.
+    mask = flood_mask(im, [(5, 5), (im.width - 5, 5), (5, im.height - 5), (im.width - 5, im.height - 5)], 22)
+    return mask, (470, 1285), 920, 2
 
 
 def tavern(im):
@@ -71,7 +61,7 @@ def tavern(im):
     ]
     outline = [(80 + x / 1.3, 60 + y / 1.3) for x, y in traced]
     foot = (80 + 590 / 1.3, 60 + 690 / 1.3)
-    return polygon_mask(im.size, [outline]), foot, 1063 / 1.3, 2
+    return polygon_mask(im.size, [outline]), foot, 1063 / 1.3, 1
 
 
 def farm(im):
@@ -93,16 +83,16 @@ def farm(im):
         for x in range(im.width):
             if min(px[x, y]) > 243:
                 mp[x, y] = 0
-    return mask, (304, 245), right[0] - left[0], 3
+    return mask, (304, 245), right[0] - left[0], 1
 
 
 def wizard(im):
     mask = flood_mask(im, [(5, 5), (im.width - 5, 5), (5, im.height - 5), (im.width - 5, im.height - 5)], 16)
     ImageDraw.Draw(mask).rectangle([0, 0, im.width, 160], fill=0)  # the artist's signature
-    return mask, (637, 965), 845, 2
+    return mask, (637, 965), 845, 1
 
 
-BUILDINGS = {'castle': ('castle.jpg', castle), 'tavern': ('tavern.jpg', tavern), 'farm': ('farm.jpg', farm), 'wizard': ('wizard.png', wizard)}
+BUILDINGS = {'castle': ('castle.webp', castle), 'tavern': ('tavern.jpg', tavern), 'farm': ('farm.jpg', farm), 'wizard': ('wizard.png', wizard)}
 
 for name, (file, fn) in BUILDINGS.items():
     im = Image.open(f'{REF}/{file}').convert('RGB')

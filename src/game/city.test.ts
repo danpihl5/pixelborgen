@@ -41,11 +41,14 @@ describe('city', () => {
     expect(city.canPlace('tavern', 5, 5)).toBe(false);
     city.place('castle', 10, 10);
     expect(city.place('tavern', 5, 5)).not.toBeNull();
-    expect(city.place('wizard', 6, 6)).toBeNull();
-    const farm = city.place('farm', 7, 5);
+    expect(city.place('wizard', 5, 5)).toBeNull();
+    expect(city.place('wizard', 10, 11)).toBeNull(); // the castle is in the way
+    const farm = city.place('farm', 6, 5);
     expect(farm).not.toBeNull();
-    expect(city.buildingAt(9, 7)).toBe(farm);
-    expect(city.canPlace('farm', 28, 28)).toBe(false);
+    expect(city.buildingAt(6, 5)).toBe(farm);
+    expect(city.buildingAt(7, 5)).toBeUndefined();
+    expect(city.canPlace('farm', 29, 29)).toBe(true);
+    expect(city.canPlace('farm', 30, 29)).toBe(false);
     expect(city.buildings).toHaveLength(3);
   });
 
